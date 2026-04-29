@@ -1,0 +1,15 @@
+target/
+out/
+.idea/
+.claude/
+*.iml
+*.class
+
+# 数据库密码（复制 db.properties.example 后改名为 db.properties）
+db.properties
+
+# 运行时棋谱产物
+manuals/*.fiv
+
+# 旧版残留（保留 .gitkeep 占位）
+img/*.fiv
