@@ -20,8 +20,10 @@ import ui.scene.Router;
 
 public class Main {
     public static void main(String[] args) {
+        Font uiFont = Fonts.sans(13, Font.PLAIN);
+        UIManager.put("defaultFont", new FontUIResource(uiFont));
         FlatLightLaf.setup();
-        installChineseCapableUIFont();
+        forceFontFamilyForAllFontKeys(uiFont);
         Profile.get();
         SkinManager.init();
         SoundManager.preload();
@@ -52,17 +54,19 @@ public class Main {
         });
     }
 
-    private static void installChineseCapableUIFont() {
-        Font base = Fonts.sans(13, Font.PLAIN);
-        FontUIResource uiFont = new FontUIResource(base);
-        UIManager.put("defaultFont", uiFont);
-        java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
-        while (keys.hasMoreElements()) {
-            Object k = keys.nextElement();
+    private static void forceFontFamilyForAllFontKeys(Font uiFont) {
+        String family = uiFont.getFamily();
+        java.util.List<Object> keys = new java.util.ArrayList<>();
+        java.util.Enumeration<Object> en = UIManager.getDefaults().keys();
+        while (en.hasMoreElements()) keys.add(en.nextElement());
+        for (Object k : keys) {
             Object v = UIManager.get(k);
             if (v instanceof FontUIResource) {
                 FontUIResource old = (FontUIResource) v;
-                UIManager.put(k, new FontUIResource(uiFont.getFamily(), old.getStyle(), old.getSize()));
+                UIManager.put(k, new FontUIResource(family, old.getStyle(), old.getSize()));
+            } else if (v instanceof Font) {
+                Font old = (Font) v;
+                UIManager.put(k, new FontUIResource(family, old.getStyle(), old.getSize()));
             }
         }
     }
