@@ -28,19 +28,32 @@ public final class GifExporter {
 
     public static File export(Manual manual, ExportOpts opts, BiConsumer<Integer, Integer> progress)
             throws IOException {
+        return export(manual, opts, progress, null);
+    }
+
+    /** 写到指定文件；outFile 为 null 时回退到 ~/.gomoku/exports/manual_*.gif。 */
+    public static File export(Manual manual, ExportOpts opts, BiConsumer<Integer, Integer> progress,
+                              File outFile) throws IOException {
         if (manual == null) throw new IllegalArgumentException("manual is null");
         if (opts == null) opts = new ExportOpts();
 
         Skin skin = SkinPack.byId(opts.skinId);
         int size = Math.max(120, opts.scale);
 
-        File dir = new File(AppConfig.get().userDataDir(), "exports");
-        if (!dir.exists()) dir.mkdirs();
-        SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        String black = safeUser(manual.getbUser());
-        String white = safeUser(manual.getwUer());
-        String fname = String.format("manual_%s_vs_%s_%s.gif", black, white, fmt.format(new Date()));
-        File out = new File(dir, fname);
+        File out;
+        if (outFile != null) {
+            out = outFile;
+            File parent = out.getParentFile();
+            if (parent != null && !parent.exists()) parent.mkdirs();
+        } else {
+            File dir = new File(AppConfig.get().userDataDir(), "exports");
+            if (!dir.exists()) dir.mkdirs();
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            String black = safeUser(manual.getbUser());
+            String white = safeUser(manual.getwUer());
+            String fname = String.format("manual_%s_vs_%s_%s.gif", black, white, fmt.format(new Date()));
+            out = new File(dir, fname);
+        }
 
         AnimatedGifEncoder enc = new AnimatedGifEncoder();
         if (!enc.start(out.getAbsolutePath())) {

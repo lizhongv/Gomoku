@@ -3,6 +3,7 @@ package ui.scene;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Window;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -242,6 +243,31 @@ public class ReviewScene implements Scene {
     }
 
     private void exportGif() {
+        java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss");
+        String black = safeName(manual.getbUser());
+        String white = safeName(manual.getwUer());
+        String defaultName = String.format("manual_%s_vs_%s_%s.gif", black, white,
+                fmt.format(new java.util.Date()));
+
+        javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
+        fc.setDialogTitle("导出 GIF — 选择保存位置");
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("GIF 动图 (*.gif)", "gif"));
+        fc.setSelectedFile(new File(defaultName));
+        if (fc.showSaveDialog(rootPanel) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        File chosen = fc.getSelectedFile();
+        if (chosen == null) return;
+        if (!chosen.getName().toLowerCase().endsWith(".gif")) {
+            chosen = new File(chosen.getAbsolutePath() + ".gif");
+        }
+        if (chosen.exists()) {
+            int r = javax.swing.JOptionPane.showConfirmDialog(rootPanel,
+                    "文件已存在：\n" + chosen.getAbsolutePath() + "\n\n是否覆盖？",
+                    "确认覆盖", javax.swing.JOptionPane.OK_CANCEL_OPTION,
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
+            if (r != javax.swing.JOptionPane.OK_OPTION) return;
+        }
+        final File out = chosen;
+
         ExportOpts opts = new ExportOpts();
         opts.skinId = SkinManager.current().id;
         opts.maxFrames = Math.max(1, manual.getTotalStep());
@@ -250,21 +276,36 @@ public class ReviewScene implements Scene {
         new SwingWorker<File, Integer>() {
             @Override
             protected File doInBackground() throws Exception {
-                return GifExporter.export(manual, opts, (cur, total) -> publish(cur * 100 / total));
+                return GifExporter.export(manual, opts,
+                        (cur, total) -> publish(cur * 100 / total), out);
             }
 
             @Override
             protected void done() {
+                Window w = SwingUtilities.getWindowAncestor(rootPanel);
                 try {
                     File f = get();
-                    GToast.success(SwingUtilities.getWindowAncestor(rootPanel),
-                            "已导出: " + f.getName());
+                    String[] options = {"打开所在文件夹", "好的"};
+                    int r = javax.swing.JOptionPane.showOptionDialog(w,
+                            "已导出到：\n" + f.getAbsolutePath(),
+                            "导出成功",
+                            javax.swing.JOptionPane.DEFAULT_OPTION,
+                            javax.swing.JOptionPane.INFORMATION_MESSAGE,
+                            null, options, options[1]);
+                    if (r == 0) {
+                        try { java.awt.Desktop.getDesktop().open(f.getParentFile()); }
+                        catch (Exception ignored) {}
+                    }
                 } catch (Exception ex) {
-                    GToast.error(SwingUtilities.getWindowAncestor(rootPanel),
-                            "导出失败: " + ex.getMessage());
+                    GToast.error(w, "导出失败: " + ex.getMessage());
                 }
             }
         }.execute();
+    }
+
+    private static String safeName(String s) {
+        if (s == null || s.isEmpty()) return "anon";
+        return s.replaceAll("[^A-Za-z0-9_\\u4e00-\\u9fa5]", "_");
     }
 
     private static String tagText(feature.review.ReviewMove.Tag tag) {
