@@ -134,7 +134,8 @@ public class HomeScene implements Scene {
         bShop.addActionListener(e    -> router.push(new ShopScene(router)));
         bManual.addActionListener(e  -> GToast.info(rootPanel, "本地棋谱：功能后续 Phase 实现"));
         bSetting.addActionListener(e -> router.push(new SettingsScene(router)));
-        bAbout.addActionListener(e   -> GToast.info(rootPanel, "关于：8.4 实现"));
+        bAbout.addActionListener(e   -> new ui.scene.dialog.AboutDialog(
+                SwingUtilities.getWindowAncestor(rootPanel)).setVisible(true));
         actions.add(bShop);
         actions.add(bManual);
         actions.add(bSetting);

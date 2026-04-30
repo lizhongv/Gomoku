@@ -40,6 +40,9 @@ public class Main {
                     GToast.success(frame,
                             "签到成功！连续 " + r.consecutiveDays + " 天，奖励 " + r.reward + " 金币");
                 }
+                if (!Profile.get().onboardingDone) {
+                    new ui.scene.dialog.OnboardingDialog(frame).setVisible(true);
+                }
             });
         });
     }

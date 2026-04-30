@@ -252,9 +252,11 @@ public class SettingsScene implements Scene {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, t.space3, 0));
         row.setOpaque(false);
         GButton about = GButton.ghost("关于");
-        about.addActionListener(e -> GToast.info(rootPanel, "关于：8.4 实现"));
+        about.addActionListener(e -> new ui.scene.dialog.AboutDialog(
+                javax.swing.SwingUtilities.getWindowAncestor(rootPanel)).setVisible(true));
         GButton onboarding = GButton.ghost("新手引导");
-        onboarding.addActionListener(e -> GToast.info(rootPanel, "新手引导：8.4 实现"));
+        onboarding.addActionListener(e -> new ui.scene.dialog.OnboardingDialog(
+                javax.swing.SwingUtilities.getWindowAncestor(rootPanel)).setVisible(true));
         GButton rules = GButton.ghost("游戏规则");
         rules.addActionListener(e -> GToast.info(rootPanel,
                 "黑棋先手，纵横斜任一方向五子连珠者胜"));
