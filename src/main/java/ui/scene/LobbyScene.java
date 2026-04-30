@@ -81,49 +81,45 @@ public class LobbyScene implements Scene, GameClient {
 
     private JPanel buildNorth() {
         Tokens t = Theme.tokens();
-        JPanel north = new JPanel(new BorderLayout(0, t.space3));
+        JPanel north = new JPanel(new BorderLayout(0, t.space2));
         north.setOpaque(false);
 
         BrandHeader header = new BrandHeader();
         header.setCurrentUser(Profile.get().nickname, null);
         north.add(header, BorderLayout.NORTH);
 
-        GCard profileCard = new GCard(true);
-        profileCard.setLayout(new BorderLayout(t.space3, 0));
+        JPanel profileRow = new JPanel(new BorderLayout(t.space2, 0));
+        profileRow.setOpaque(false);
+        profileRow.setBorder(BorderFactory.createEmptyBorder(t.space1, t.space5, 0, t.space5));
 
-        profileAvatar = new GAvatar(56, false);
+        profileAvatar = new GAvatar(36, false);
         profileAvatar.setImagePath(Profile.get().avatarPath);
-        profileCard.add(profileAvatar, BorderLayout.WEST);
+        profileRow.add(profileAvatar, BorderLayout.WEST);
 
-        JPanel center = new JPanel();
-        center.setOpaque(false);
-        center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
-
-        JPanel firstRow = new JPanel(new FlowLayout(FlowLayout.LEFT, t.space2, 0));
-        firstRow.setOpaque(false);
+        JPanel info = new JPanel(new FlowLayout(FlowLayout.LEFT, t.space2, 0));
+        info.setOpaque(false);
         JLabel nick = new JLabel(Profile.get().nickname);
-        nick.setFont(t.fontHeading);
+        nick.setFont(t.fontBody);
         nick.setForeground(t.fgDefault);
         rankChip = new GChip(Profile.get().levelTitle(), t.accent, t.fgOnAccent);
-        firstRow.add(nick);
-        firstRow.add(rankChip);
-
         profileText = new JLabel(buildProfileText());
-        profileText.setFont(t.fontBody);
+        profileText.setFont(t.fontCaption);
         profileText.setForeground(t.fgMuted);
-        profileText.setAlignmentX(Component.LEFT_ALIGNMENT);
+        info.add(nick);
+        info.add(rankChip);
+        info.add(profileText);
+        profileRow.add(info, BorderLayout.CENTER);
 
-        center.add(firstRow);
-        center.add(Box.createVerticalStrut(t.space1));
-        center.add(profileText);
-        profileCard.add(center, BorderLayout.CENTER);
-
-        GButton change = GButton.secondary("更换头像");
+        GButton change = GButton.ghost("更换头像");
         change.addActionListener(e -> changeAvatar());
         JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         east.setOpaque(false);
         east.add(change);
-        profileCard.add(east, BorderLayout.EAST);
+        profileRow.add(east, BorderLayout.EAST);
+
+        GCard profileCard = new GCard(false);
+        profileCard.setLayout(new BorderLayout());
+        profileCard.add(profileRow, BorderLayout.CENTER);
 
         JPanel padded = new JPanel(new BorderLayout());
         padded.setOpaque(false);
@@ -167,7 +163,7 @@ public class LobbyScene implements Scene, GameClient {
         GCard card = new GCard(true);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
-        String[] labels = {"邀请选中", "聊天", "人机对战", "云端棋谱", "本地棋谱", "退出登录"};
+        String[] labels = {"邀请选中", "人机对战", "云端棋谱", "本地棋谱", "退出登录"};
         for (int i = 0; i < labels.length; i++) {
             String label = labels[i];
             GButton b = (i == 0) ? GButton.primary(label) : GButton.secondary(label);
@@ -179,9 +175,6 @@ public class LobbyScene implements Scene, GameClient {
                     break;
                 case "邀请选中":
                     b.addActionListener(e -> inviteSelected());
-                    break;
-                case "聊天":
-                    b.addActionListener(e -> doChat());
                     break;
                 case "退出登录":
                     b.addActionListener(e -> doLogout());
@@ -213,6 +206,12 @@ public class LobbyScene implements Scene, GameClient {
 
         chatPanel = new ChatPanel();
         chatPanel.setHeader("大厅群聊 · 所有在线玩家可见");
+        chatPanel.onSend(text -> {
+            if (comm == null) return;
+            comm.talk(text);
+            chatPanel.appendChat(comm.getMyName() == null ? Profile.get().nickname : comm.getMyName(),
+                    text, true);
+        });
         chatPanel.setPreferredSize(new Dimension(10, 100));
         south.add(chatPanel, BorderLayout.CENTER);
 
@@ -264,17 +263,6 @@ public class LobbyScene implements Scene, GameClient {
         d.setSize(new Dimension(360, 200));
         d.setLocationRelativeTo(rootPanel);
         d.setVisible(true);
-    }
-
-    private void doChat() {
-        String text = JOptionPane.showInputDialog(rootPanel, "请输入消息：", "聊天",
-                JOptionPane.PLAIN_MESSAGE);
-        if (text == null) return;
-        text = text.trim();
-        if (text.isEmpty()) return;
-        comm.talk(text);
-        chatPanel.appendChat(comm.getMyName() == null ? Profile.get().nickname : comm.getMyName(),
-                text, true);
     }
 
     private void doLogout() {
@@ -368,8 +356,13 @@ public class LobbyScene implements Scene, GameClient {
         if (comm != null) {
             comm.setClient(this);
             String me = comm.getMyName();
-            if (me != null) statusBar.setOnline("已连接 - " + me);
-            else statusBar.setOnline("已连接");
+            if (me != null) {
+                statusBar.setOnline("已连接 - " + me);
+                if (chatPanel != null && chatPanel.isEmpty()) {
+                    chatPanel.appendOk("欢迎来到大厅，" + me);
+                    chatPanel.appendInfo("在玩家列表双击任意玩家即可发起对局邀请");
+                }
+            } else statusBar.setOnline("已连接");
         }
     }
 
@@ -380,7 +373,14 @@ public class LobbyScene implements Scene, GameClient {
     }
 
     @Override public void onUserList(String name, String state) {
-        runOnEdt(() -> replaceUserListItem(name, state == null ? "新手" : state));
+        runOnEdt(() -> {
+            boolean wasNew = !hasUser(name);
+            replaceUserListItem(name, state == null ? "新手" : state);
+            String me = comm == null ? null : comm.getMyName();
+            if (wasNew && name != null && !name.equals(me) && chatPanel != null) {
+                chatPanel.appendInfo("玩家 " + name + " 上线了");
+            }
+        });
     }
 
     @Override public void onUserStateChange(String name, String state) {
@@ -392,10 +392,19 @@ public class LobbyScene implements Scene, GameClient {
             for (int i = 0; i < userListModel.size(); i++) {
                 if (stripStateSuffix(userListModel.get(i)).equals(name)) {
                     userListModel.remove(i);
+                    if (chatPanel != null) chatPanel.appendInfo("玩家 " + name + " 下线了");
                     return;
                 }
             }
         });
+    }
+
+    private boolean hasUser(String name) {
+        if (name == null) return false;
+        for (int i = 0; i < userListModel.size(); i++) {
+            if (stripStateSuffix(userListModel.get(i)).equals(name)) return true;
+        }
+        return false;
     }
 
     @Override public void onInvite(String fromName, int seconds) {
