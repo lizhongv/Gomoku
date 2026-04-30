@@ -22,14 +22,22 @@ public class Evaluate {
 	// 取自 AiBoard 的快照，AI 在自己的副本上推演，避免与 EDT 写入产生数据竞争
 	private final int[][] boardStatus;
 	private final int computerColor;
+	private final int searchDepth;
+	private final int sampleNumber;
 
 	public Evaluate(int[][] boardSnapshot, int computerColor) {
+		this(boardSnapshot, computerColor, SEARCH_DEPTH, SAMPLE_NUMBER);
+	}
+
+	public Evaluate(int[][] boardSnapshot, int computerColor, int searchDepth, int sampleNumber) {
 		int n = COLS + 1;
 		this.boardStatus = new int[n][n];
 		for (int i = 0; i < n; i++) {
 			System.arraycopy(boardSnapshot[i], 0, this.boardStatus[i], 0, n);
 		}
 		this.computerColor = computerColor;
+		this.searchDepth = searchDepth;
+		this.sampleNumber = sampleNumber;
 
 		blackValue = new int[n][n];
 		whiteValue = new int[n][n];
@@ -45,6 +53,7 @@ public class Evaluate {
 	}
 
 	public int[] getTheBestPosition() {
+		if (searchDepth <= 0) return new int[]{7, 7};
 		for (int i = 0; i <= COLS; i++) {
 			for (int j = 0; j <= ROWS; j++) {
 				blackValue[i][j] = 0;
@@ -69,7 +78,7 @@ public class Evaluate {
 				break;
 			}
 			boardStatus[valuablePositions[i][0]][valuablePositions[i][1]] = computerColor;
-			value = min(SEARCH_DEPTH, -LARGE_NUMBER, LARGE_NUMBER);
+			value = min(searchDepth, -LARGE_NUMBER, LARGE_NUMBER);
 			boardStatus[valuablePositions[i][0]][valuablePositions[i][1]] = 0;
 			if (value > maxValue) {
 				maxValue = value;
@@ -78,6 +87,10 @@ public class Evaluate {
 			}
 		}
 		return position;
+	}
+
+	public int snapshotScore() {
+		return evaluateGame();
 	}
 
 	private int min(int depth, int alpha, int beta) {
@@ -458,7 +471,7 @@ public class Evaluate {
 		}
 
 		sort(allValue, k);
-		int size = Math.min(k, SAMPLE_NUMBER);
+		int size = Math.min(k, sampleNumber);
 		int[][] valuablePositions = new int[size][3];
 		for (i = 0; i < size; i++) {
 			valuablePositions[i][0] = allValue[i][0];
