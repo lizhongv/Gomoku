@@ -257,7 +257,7 @@ public class SettingsScene implements Scene {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, t.space3, 0));
         row.setOpaque(false);
         GButton export = GButton.secondary("导出档案");
-        export.addActionListener(e -> GToast.info(rootPanel, "导出功能 Phase 9 实现"));
+        export.addActionListener(e -> doExport());
         GButton clear = GButton.secondary("清空本地数据");
         clear.setForeground(t.danger);
         clear.addActionListener(e -> {
@@ -293,8 +293,7 @@ public class SettingsScene implements Scene {
         onboarding.addActionListener(e -> new ui.scene.dialog.OnboardingDialog(
                 javax.swing.SwingUtilities.getWindowAncestor(rootPanel)).setVisible(true));
         GButton rules = GButton.ghost("游戏规则");
-        rules.addActionListener(e -> GToast.info(rootPanel,
-                "黑棋先手，纵横斜任一方向五子连珠者胜"));
+        rules.addActionListener(e -> showRulesDialog());
         row.add(about);
         row.add(onboarding);
         row.add(rules);
@@ -308,6 +307,81 @@ public class SettingsScene implements Scene {
         l.setFont(t.fontHeading);
         l.setForeground(t.fgDefault);
         return l;
+    }
+
+    private void doExport() {
+        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+        chooser.setDialogTitle("导出档案为 zip");
+        chooser.setSelectedFile(new File("gomoku-backup-"
+                + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date())
+                + ".zip"));
+        if (chooser.showSaveDialog(rootPanel) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        File out = chooser.getSelectedFile();
+        File dataDir = AppConfig.get().userDataDir();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(
+                new java.io.BufferedOutputStream(new java.io.FileOutputStream(out)))) {
+            zipDirInto(zos, dataDir, "");
+            GToast.success(rootPanel, "已导出到：" + out.getName());
+        } catch (java.io.IOException ex) {
+            GToast.error(rootPanel, "导出失败：" + ex.getMessage());
+        }
+    }
+
+    private void zipDirInto(java.util.zip.ZipOutputStream zos, File dir, String prefix)
+            throws java.io.IOException {
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            String entryName = prefix + f.getName();
+            if (f.isDirectory()) {
+                zipDirInto(zos, f, entryName + "/");
+            } else {
+                zos.putNextEntry(new java.util.zip.ZipEntry(entryName));
+                java.nio.file.Files.copy(f.toPath(), zos);
+                zos.closeEntry();
+            }
+        }
+    }
+
+    private void showRulesDialog() {
+        java.awt.Window owner = javax.swing.SwingUtilities.getWindowAncestor(rootPanel);
+        ui.component.GDialog d = new ui.component.GDialog(owner, "五子棋规则", true);
+        d.getContentPane().setLayout(new BorderLayout());
+        javax.swing.JEditorPane pane = new javax.swing.JEditorPane();
+        pane.setContentType("text/html");
+        pane.setEditable(false);
+        Tokens t = Theme.tokens();
+        pane.setBackground(t.bgPrimary);
+        pane.setText("<html><body style='font-family:Microsoft YaHei UI; padding:8px; color:#3A2418;'>"
+                + "<h3>对局目标</h3>"
+                + "<p>在 15×15 棋盘上，先在横、竖、斜任一方向连成五子者胜。</p>"
+                + "<h3>基本规则</h3>"
+                + "<ul>"
+                + "<li>黑棋先手，黑白双方轮流落子，每次仅落一颗。</li>"
+                + "<li>已落下的棋子不可移动或拿取。</li>"
+                + "<li>本作采用「无禁手」规则，黑白方权利对等。</li>"
+                + "<li>满盘和棋（理论上极难）。</li>"
+                + "</ul>"
+                + "<h3>常见术语</h3>"
+                + "<ul>"
+                + "<li><b>活四</b>：四子连成且两端均为空，下一步必胜。</li>"
+                + "<li><b>双三</b>：同一手形成两个活三，对方难以同时防守。</li>"
+                + "<li><b>冲四</b>：四子连成但仅一端可落子，须立即应对。</li>"
+                + "</ul>"
+                + "<p style='color:#8A6D4F'><i>提示：开局抢占中央 (7,7) 通常更占优势。</i></p>"
+                + "</body></html>");
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(pane);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        d.getContentPane().add(scroll, BorderLayout.CENTER);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttons.setOpaque(false);
+        GButton ok = GButton.primary("我知道了");
+        ok.addActionListener(e -> d.dispose());
+        buttons.add(ok);
+        d.getContentPane().add(buttons, BorderLayout.SOUTH);
+        d.setSize(new Dimension(500, 460));
+        d.setLocationRelativeTo(rootPanel);
+        d.setVisible(true);
     }
 
     @Override public JComponent root() { return rootPanel; }

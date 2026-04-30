@@ -48,6 +48,10 @@ public class GameScene implements Scene {
     private boolean ended;
     @SuppressWarnings("unused")
     private Manual completedManual;
+    private javax.swing.Timer countdown;
+    private int meSeconds;
+    private int opSeconds;
+    private boolean myTurn;
 
     public GameScene(Router router, GameSession session) {
         this.router = router;
@@ -210,6 +214,8 @@ public class GameScene implements Scene {
                 turnChip.setText("您的回合");
                 meCard.setActive(true);
                 opCard.setActive(false);
+                myTurn = true;
+                ensureCountdown();
                 break;
             case OPP_MOVE:
                 resolveColor();
@@ -218,10 +224,13 @@ public class GameScene implements Scene {
                 turnChip.setText("对手回合");
                 meCard.setActive(false);
                 opCard.setActive(true);
+                myTurn = false;
+                ensureCountdown();
                 EventBus.publish(new MoveEvent(ev.col, ev.row, false));
                 break;
             case RESULT_WIN:
                 ended = true;
+                stopCountdown();
                 board.setInteractive(false);
                 turnChip.setText("您赢了");
                 GToast.success(rootPanel, "您赢了！");
@@ -229,6 +238,7 @@ public class GameScene implements Scene {
                 break;
             case RESULT_LOSE:
                 ended = true;
+                stopCountdown();
                 board.setInteractive(false);
                 turnChip.setText("您输了");
                 GToast.error(rootPanel, "您输了");
@@ -236,6 +246,7 @@ public class GameScene implements Scene {
                 break;
             case OPP_LEFT:
                 ended = true;
+                stopCountdown();
                 board.setInteractive(false);
                 turnChip.setText("对手已离开");
                 GToast.error(rootPanel, "对手已离开");
@@ -247,6 +258,41 @@ public class GameScene implements Scene {
                 break;
             default:
                 break;
+        }
+    }
+
+    private void ensureCountdown() {
+        if (countdown != null) return;
+        meSeconds = session.initialTimeSeconds();
+        opSeconds = session.initialTimeSeconds();
+        meCard.setTimer(meSeconds);
+        opCard.setTimer(opSeconds);
+        countdown = new javax.swing.Timer(1000, e -> tickCountdown());
+        countdown.start();
+    }
+
+    private void stopCountdown() {
+        if (countdown != null) {
+            countdown.stop();
+            countdown = null;
+        }
+    }
+
+    private void tickCountdown() {
+        if (ended) { stopCountdown(); return; }
+        if (myTurn) {
+            meSeconds = Math.max(0, meSeconds - 1);
+            meCard.setTimer(meSeconds);
+            if (meSeconds == 0) {
+                ended = true;
+                stopCountdown();
+                board.setInteractive(false);
+                GToast.error(rootPanel, "时间到，自动认输");
+                session.giveup();
+            }
+        } else {
+            opSeconds = Math.max(0, opSeconds - 1);
+            opCard.setTimer(opSeconds);
         }
     }
 
@@ -304,5 +350,8 @@ public class GameScene implements Scene {
         EventBus.publish(new GameStartEvent(mode, null, session.opponentName()));
         session.start();
     }
-    @Override public void onLeave() { if (!ended) session.leave(); }
+    @Override public void onLeave() {
+        stopCountdown();
+        if (!ended) session.leave();
+    }
 }

@@ -187,8 +187,6 @@ public class LobbyScene implements Scene, GameClient {
                 case "云端棋谱":
                     b.addActionListener(e -> openCloudManuals());
                     break;
-                default:
-                    b.addActionListener(e -> GToast.info(rootPanel, label + "：功能后续 Phase 实现"));
             }
             card.add(b);
             if (i < labels.length - 1) card.add(Box.createVerticalStrut(t.space2));
