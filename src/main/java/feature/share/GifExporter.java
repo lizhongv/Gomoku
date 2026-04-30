@@ -56,16 +56,29 @@ public final class GifExporter {
         int frames = Math.min(total, opts.maxFrames);
         if (cl != null) frames = Math.min(frames, cl.length);
 
+        String winnerLabel = winnerLabel(manual);
         try {
             for (int i = 0; i < frames; i++) {
-                BufferedImage img = drawFrame(skin, cl, i, size, opts.showLastMoveRing);
+                BufferedImage img = drawFrame(skin, cl, i, size, opts.showLastMoveRing,
+                        manual.getbUser(), manual.getwUer(), null);
                 enc.addFrame(img);
                 if (progress != null) progress.accept(i + 1, frames);
             }
+            int holdMs = Math.max(opts.frameDelayMs * 4, 2000);
+            enc.setDelay(holdMs);
+            BufferedImage finalImg = drawFrame(skin, cl, frames - 1, size, opts.showLastMoveRing,
+                    manual.getbUser(), manual.getwUer(), winnerLabel);
+            enc.addFrame(finalImg);
         } finally {
             enc.finish();
         }
         return out;
+    }
+
+    private static String winnerLabel(Manual m) {
+        String w = m.getWinner();
+        if (w == null || w.isEmpty()) return "终局";
+        return w + " 胜";
     }
 
     private static String safeUser(String s) {
@@ -73,14 +86,27 @@ public final class GifExporter {
         return s.replaceAll("[^A-Za-z0-9_\\u4e00-\\u9fa5]", "_");
     }
 
-    private static BufferedImage drawFrame(Skin skin, int[][] cl, int upto, int size, boolean ring) {
-        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
+    private static BufferedImage drawFrame(Skin skin, int[][] cl, int upto, int size, boolean ring,
+                                            String black, String white, String banner) {
+        int headerH = 36;
+        BufferedImage img = new BufferedImage(size, size + headerH, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2 = img.createGraphics();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         Tokens tk = skin.tokens;
         BoardStyle bs = skin.board;
         PieceStyle ps = skin.pieces;
+
+        g2.setColor(tk.bgToolbar);
+        g2.fillRect(0, 0, size, headerH);
+        g2.setFont(ui.design.Fonts.sans(14, java.awt.Font.BOLD));
+        g2.setColor(tk.fgDefault);
+        String title = "● " + safeText(black, "黑方") + "  vs  ○ " + safeText(white, "白方");
+        java.awt.FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(title, (size - fm.stringWidth(title)) / 2, headerH - 12);
+
+        g2.translate(0, headerH);
 
         g2.setPaint(new GradientPaint(0, 0, bs.bgTop, 0, size, bs.bgBottom));
         g2.fillRect(0, 0, size, size);
@@ -128,9 +154,9 @@ public final class GifExporter {
                 int col = mv[0];
                 int row = mv[1];
                 if (col < 0 || col >= N || row < 0 || row >= N) continue;
-                boolean black = (i % 2 == 0);
-                drawStone(g2, ps, originX, originY, cellSize, diameter, col, row, black);
-                lastCol = col; lastRow = row; lastBlack = black;
+                boolean isBlack = (i % 2 == 0);
+                drawStone(g2, ps, originX, originY, cellSize, diameter, col, row, isBlack);
+                lastCol = col; lastRow = row; lastBlack = isBlack;
             }
             if (ring && lastCol >= 0) {
                 int cx = originX + lastCol * cellSize;
@@ -146,8 +172,23 @@ public final class GifExporter {
             }
         }
 
+        if (banner != null) {
+            int boxH = 64;
+            int boxY = (size - boxH) / 2;
+            g2.setColor(new Color(0, 0, 0, 170));
+            g2.fillRect(0, boxY, size, boxH);
+            g2.setColor(java.awt.Color.WHITE);
+            g2.setFont(ui.design.Fonts.sans(28, java.awt.Font.BOLD));
+            java.awt.FontMetrics fmB = g2.getFontMetrics();
+            g2.drawString(banner, (size - fmB.stringWidth(banner)) / 2, boxY + 42);
+        }
+
         g2.dispose();
         return img;
+    }
+
+    private static String safeText(String s, String fallback) {
+        return (s == null || s.isEmpty()) ? fallback : s;
     }
 
     private static void drawStone(Graphics2D g2, PieceStyle ps, int originX, int originY,

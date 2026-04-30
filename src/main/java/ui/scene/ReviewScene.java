@@ -103,7 +103,7 @@ public class ReviewScene implements Scene {
 
         moveListModel = new DefaultListModel<>();
         moveList = new JList<>(moveListModel);
-        moveList.setFont(t.fontMono);
+        moveList.setFont(t.fontBody);
         moveList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
             int idx = moveList.getSelectedIndex();
@@ -232,7 +232,7 @@ public class ReviewScene implements Scene {
             ReviewMove mv = report.moves[i];
             String prefix = (i % 2 == 0) ? "黑" : "白";
             moveListModel.addElement(String.format("[%2d] %s (%2d,%2d) %s",
-                    i + 1, prefix, mv.col, mv.row, mv.tag.name()));
+                    i + 1, prefix, mv.col, mv.row, tagText(mv.tag)));
         }
         if (n > 0) {
             int sel = Math.min(slider.getValue(), n - 1);
@@ -265,6 +265,19 @@ public class ReviewScene implements Scene {
                 }
             }
         }.execute();
+    }
+
+    private static String tagText(feature.review.ReviewMove.Tag tag) {
+        if (tag == null) return "";
+        switch (tag) {
+            case BRILLIANT:  return "妙手";
+            case GOOD:       return "好棋";
+            case OK:         return "普通";
+            case INACCURATE: return "不精";
+            case MISTAKE:    return "失误";
+            case BLUNDER:    return "大错";
+            default:         return tag.name();
+        }
     }
 
     @Override public JComponent root() { return rootPanel; }

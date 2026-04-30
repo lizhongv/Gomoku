@@ -157,6 +157,9 @@ public class GameScene implements Scene {
         rootPanel.add(sideWrap, BorderLayout.EAST);
 
         chat = new ChatPanel();
+        chat.setHeader(session instanceof net.AiGameSession
+            ? "本地聊天 · 仅自己可见（AI 模式）"
+            : "对局聊天 · 与对手私聊");
         chat.setMinimumSize(new Dimension(0, 80));
         chat.setPreferredSize(new Dimension(10, 130));
 
@@ -337,8 +340,21 @@ public class GameScene implements Scene {
         d.getContentPane().add(lbl, BorderLayout.CENTER);
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, Theme.tokens().space2, 0));
         buttons.setOpaque(false);
+        if (session instanceof net.AiGameSession) {
+            net.AiGameSession ai = (net.AiGameSession) session;
+            int depth = ai.aiDepth();
+            int samples = ai.aiSamples();
+            GButton again = GButton.primary("再来一局");
+            again.addActionListener(e -> {
+                d.dispose();
+                router.replace(new GameScene(router, new net.AiGameSession("black", depth, samples)));
+            });
+            buttons.add(again);
+        }
         if (manual != null) {
-            GButton review = GButton.primary("查看复盘");
+            GButton review = (session instanceof net.AiGameSession)
+                ? GButton.secondary("查看复盘")
+                : GButton.primary("查看复盘");
             review.addActionListener(e -> {
                 d.dispose();
                 router.replace(new ReviewScene(router, manual));

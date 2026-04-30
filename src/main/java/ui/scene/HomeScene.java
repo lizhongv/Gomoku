@@ -113,54 +113,23 @@ public class HomeScene implements Scene {
 
     private JPanel buildCenter() {
         Tokens t = Theme.tokens();
-        JPanel grid = new JPanel(new GridLayout(1, 2, t.space5, 0));
+        JPanel grid = new JPanel(new GridLayout(1, 1));
         grid.setOpaque(false);
 
-        Color onlineFrom = t.accent;
-        Color onlineTo = t.accent.darker();
-        GradientCard onlineCard = new GradientCard(onlineFrom, onlineTo,
-            "联机对战", "邀请好友 · 观战 · 棋谱共享");
-        onlineCard.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { onOnlineClicked(); }
+        Color from = t.accent;
+        Color to = t.accent.darker();
+        GradientCard startCard = new GradientCard(from, to,
+            "开始游戏", "登录后可联机邀请 · 人机对战 · 复盘 · 段位");
+        startCard.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) { onStartClicked(); }
         });
 
-        Color aiFrom = new Color(0x1976D2);
-        Color aiTo = new Color(0x0D47A1);
-        GradientCard aiCard = new GradientCard(aiFrom, aiTo,
-            "人机对战", "本地 AI · 多种难度 · 即开即玩");
-        aiCard.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { onAiClicked(); }
-        });
-
-        grid.add(onlineCard);
-        grid.add(aiCard);
+        grid.add(startCard);
         return grid;
     }
 
-    private void onOnlineClicked() {
-        new LoginDialog(SwingUtilities.getWindowAncestor(rootPanel),
-            comm -> router.push(new LobbyScene(router, comm))).setVisible(true);
-    }
-
-    private void onAiClicked() {
-        Object[] difficulties = {"简单 (深度 1)", "标准 (深度 3)", "困难 (深度 5)", "取消"};
-        int defIdx;
-        switch (Profile.get().aiDefaultDepth) {
-            case 1: defIdx = 0; break;
-            case 5: defIdx = 2; break;
-            default: defIdx = 1; break;
-        }
-        int choice = JOptionPane.showOptionDialog(
-            SwingUtilities.getWindowAncestor(rootPanel),
-            "请选择 AI 难度（你执黑先手）",
-            "人机对战",
-            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
-            null, difficulties, difficulties[defIdx]);
-        if (choice < 0 || choice == 3) return;
-        int[] depths  = {1, 3, 5};
-        int[] samples = {5, 10, 15};
-        AiGameSession session = new AiGameSession("black", depths[choice], samples[choice]);
-        router.push(new GameScene(router, session));
+    private void onStartClicked() {
+        new LoginDialog(SwingUtilities.getWindowAncestor(rootPanel), router, comm -> {}).setVisible(true);
     }
 
     private JPanel buildSouth() {

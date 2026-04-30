@@ -13,22 +13,25 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import net.Communication;
-import net.NoopGameClient;
 import ui.Theme;
 import ui.component.GButton;
 import ui.component.GDialog;
 import ui.component.GTextField;
 import ui.component.GToast;
 import ui.design.Tokens;
+import ui.scene.LobbyScene;
+import ui.scene.Router;
 
 public class LoginDialog extends GDialog {
+    private final Router router;
     private final Consumer<Communication> onLoginSuccess;
     private final GTextField ipField;
     private final GTextField userField;
     private final JPasswordField pwdField;
 
-    public LoginDialog(Window owner, Consumer<Communication> onLoginSuccess) {
+    public LoginDialog(Window owner, Router router, Consumer<Communication> onLoginSuccess) {
         super(owner, "登录到服务器", true);
+        this.router = router;
         this.onLoginSuccess = onLoginSuccess;
         Tokens t = Theme.tokens();
 
@@ -104,12 +107,15 @@ public class LoginDialog extends GDialog {
             return;
         }
         try {
-            Communication comm = new Communication(new NoopGameClient());
+            LobbyScene lobby = new LobbyScene(router, null);
+            Communication comm = new Communication(lobby);
             String status = comm.loginStatus(ip, user, pwd);
             switch (status) {
                 case "ok":
-                    if (onLoginSuccess != null) onLoginSuccess.accept(comm);
+                    lobby.attachComm(comm);
                     dispose();
+                    if (onLoginSuccess != null) onLoginSuccess.accept(comm);
+                    router.push(lobby);
                     break;
                 case "hasLogin":
                     GToast.error(this, "该账号已在其他客户端登录");

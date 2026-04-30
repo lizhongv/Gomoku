@@ -44,7 +44,7 @@ import ui.design.Tokens;
 
 public class LobbyScene implements Scene, GameClient {
     private final Router router;
-    private final Communication comm;
+    private Communication comm;
     private final JPanel rootPanel;
     private final DefaultListModel<String> userListModel = new DefaultListModel<>();
     private JList<String> userList;
@@ -59,6 +59,11 @@ public class LobbyScene implements Scene, GameClient {
         this.router = router;
         this.comm = comm;
         this.rootPanel = build();
+    }
+
+    public void attachComm(Communication c) {
+        this.comm = c;
+        if (c != null) c.setClient(this);
     }
 
     private JPanel build() {
@@ -207,6 +212,7 @@ public class LobbyScene implements Scene, GameClient {
         south.setBorder(BorderFactory.createEmptyBorder(0, t.space5, 0, t.space5));
 
         chatPanel = new ChatPanel();
+        chatPanel.setHeader("大厅群聊 · 所有在线玩家可见");
         chatPanel.setPreferredSize(new Dimension(10, 100));
         south.add(chatPanel, BorderLayout.CENTER);
 

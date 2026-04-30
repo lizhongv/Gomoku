@@ -26,11 +26,18 @@ public class ChatPanel extends JPanel implements ThemeAware {
     private final JTextPane pane;
     private final StyledDocument doc;
     private final SimpleDateFormat fmt = new SimpleDateFormat("HH:mm:ss");
+    private final javax.swing.JLabel header;
 
     public ChatPanel() {
         super(new BorderLayout());
         setOpaque(false);
         Tokens t = Theme.tokens();
+
+        header = new javax.swing.JLabel("");
+        header.setFont(t.fontCaption);
+        header.setForeground(t.fgMuted);
+        header.setBorder(BorderFactory.createEmptyBorder(t.space2, t.space3, 0, t.space3));
+        header.setVisible(false);
 
         pane = new JTextPane();
         pane.setEditable(false);
@@ -46,7 +53,17 @@ public class ChatPanel extends JPanel implements ThemeAware {
         sp.setBorder(BorderFactory.createEmptyBorder());
 
         setBorder(BorderFactory.createEmptyBorder(t.space2, t.space2, t.space2, t.space2));
+        add(header, BorderLayout.NORTH);
         add(sp, BorderLayout.CENTER);
+    }
+
+    public void setHeader(String text) {
+        if (text == null || text.isEmpty()) {
+            header.setVisible(false);
+        } else {
+            header.setText(text);
+            header.setVisible(true);
+        }
     }
 
     public void appendInfo(String msg) {
