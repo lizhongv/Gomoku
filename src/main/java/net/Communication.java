@@ -106,6 +106,11 @@ public class Communication {
 
 	/** 单次握手注册：新建短连接，发送 REGISTER + User 对象，读取应答。 */
 	public static boolean register(String ip, String name, String pwd, String email) {
+		return "ok".equals(registerStatus(ip, name, pwd, email));
+	}
+
+	/** 注册状态字符串：ok / fail / error。 */
+	public static String registerStatus(String ip, String name, String pwd, String email) {
 		try (Socket regSock = Net.newSocket(ip, FiveServer.TCP_PORT)) {
 			DataInputStream in = new DataInputStream(regSock.getInputStream());
 			DataOutputStream out = new DataOutputStream(regSock.getOutputStream());
@@ -114,9 +119,12 @@ public class Communication {
 			oos.writeObject(new user.User(name, pwd, email, 1, new java.sql.Date(System.currentTimeMillis())));
 			oos.flush();
 			Message reply = Message.read(in);
-			return Command.REGISTER.equals(reply.command()) && "true".equals(reply.argOr(0, ""));
+			if (Command.REGISTER.equals(reply.command()) && "true".equals(reply.argOr(0, ""))) {
+				return "ok";
+			}
+			return "fail";
 		} catch (Exception e) {
-			return false;
+			return "error";
 		}
 	}
 

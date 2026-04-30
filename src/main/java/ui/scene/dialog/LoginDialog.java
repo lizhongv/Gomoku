@@ -105,15 +105,25 @@ public class LoginDialog extends GDialog {
         }
         try {
             Communication comm = new Communication(new NoopGameClient());
-            boolean ok = comm.login(ip, user, pwd);
-            if (ok) {
-                if (onLoginSuccess != null) onLoginSuccess.accept(comm);
-                dispose();
-            } else {
-                GToast.error(this, "登录失败");
+            String status = comm.loginStatus(ip, user, pwd);
+            switch (status) {
+                case "ok":
+                    if (onLoginSuccess != null) onLoginSuccess.accept(comm);
+                    dispose();
+                    break;
+                case "hasLogin":
+                    GToast.error(this, "该账号已在其他客户端登录");
+                    break;
+                case "fail":
+                    GToast.error(this, "用户名或密码错误（也可能尚未注册）");
+                    break;
+                case "error":
+                default:
+                    GToast.error(this, "无法连接服务器，请确认 Gomoku-Server 已启动且 IP 正确");
+                    break;
             }
         } catch (Exception ex) {
-            GToast.error(this, "登录失败：" + ex.getClass().getSimpleName());
+            GToast.error(this, "登录异常：" + ex.getClass().getSimpleName() + " " + ex.getMessage());
         }
     }
 }

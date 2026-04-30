@@ -106,13 +106,20 @@ public class RegisterDialog extends GDialog {
         if (!p1.equals(p2)) {
             GToast.error(this, "两次密码不一致"); return;
         }
-        boolean ok = Communication.register(ip, user, p1, email);
-        if (ok) {
-            GToast.success(this, "注册成功，请使用新账号登录");
-            if (onSuccess != null) onSuccess.accept(user);
-            dispose();
-        } else {
-            GToast.error(this, "注册失败：用户名可能已存在或服务器不可达");
+        String status = Communication.registerStatus(ip, user, p1, email);
+        switch (status) {
+            case "ok":
+                GToast.success(this, "注册成功，请使用新账号登录");
+                if (onSuccess != null) onSuccess.accept(user);
+                dispose();
+                break;
+            case "fail":
+                GToast.error(this, "注册失败：用户名已被占用或不合法");
+                break;
+            case "error":
+            default:
+                GToast.error(this, "无法连接服务器，请确认 Gomoku-Server 已启动且 IP 正确");
+                break;
         }
     }
 }
