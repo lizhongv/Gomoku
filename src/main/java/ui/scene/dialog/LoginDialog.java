@@ -71,7 +71,10 @@ public class LoginDialog extends GDialog {
         GButton register = GButton.secondary("注册");
         GButton cancel = GButton.ghost("取消");
         login.addActionListener(e -> doLogin());
-        register.addActionListener(e -> GToast.info(this, "注册：暂不支持，请使用现有账号"));
+        register.addActionListener(e -> {
+            RegisterDialog rd = new RegisterDialog(owner, name -> userField.setText(name));
+            rd.setVisible(true);
+        });
         cancel.addActionListener(e -> dispose());
         buttons.add(login);
         buttons.add(register);

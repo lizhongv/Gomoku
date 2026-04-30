@@ -23,10 +23,12 @@ import javax.swing.ListCellRenderer;
 import javax.swing.SwingUtilities;
 import game.Game;
 import game.Manual;
+import net.AiGameSession;
 import net.Communication;
 import net.GameClient;
 import net.OnlineGameSession;
 import profile.Profile;
+import ui.scene.dialog.CloudManualsDialog;
 import ui.Theme;
 import ui.component.BrandHeader;
 import ui.component.ChatPanel;
@@ -50,6 +52,7 @@ public class LobbyScene implements Scene, GameClient {
     private GChip rankChip;
     private StatusBar statusBar;
     private ChatPanel chatPanel;
+    private CloudManualsDialog cloudDialog;
 
     public LobbyScene(Router router, Communication comm) {
         this.router = router;
@@ -176,6 +179,12 @@ public class LobbyScene implements Scene, GameClient {
                 case "退出登录":
                     b.addActionListener(e -> doLogout());
                     break;
+                case "人机对战":
+                    b.addActionListener(e -> startAiGame());
+                    break;
+                case "云端棋谱":
+                    b.addActionListener(e -> openCloudManuals());
+                    break;
                 default:
                     b.addActionListener(e -> GToast.info(rootPanel, label + "：功能后续 Phase 实现"));
             }
@@ -265,6 +274,30 @@ public class LobbyScene implements Scene, GameClient {
     private void doLogout() {
         try { comm.disConnect(); } catch (Exception ignored) {}
         router.pop();
+    }
+
+    private void startAiGame() {
+        Object[] difficulties = {"简单 (深度 1)", "标准 (深度 3)", "困难 (深度 5)", "取消"};
+        int choice = JOptionPane.showOptionDialog(
+                SwingUtilities.getWindowAncestor(rootPanel),
+                "请选择 AI 难度（你执黑先手）",
+                "人机对战",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+                null, difficulties, difficulties[1]);
+        if (choice < 0 || choice == 3) return;
+        int[] depths  = {1, 3, 5};
+        int[] samples = {5, 10, 15};
+        AiGameSession session = new AiGameSession("black", depths[choice], samples[choice]);
+        router.push(new GameScene(router, session));
+    }
+
+    private void openCloudManuals() {
+        Window owner = SwingUtilities.getWindowAncestor(rootPanel);
+        cloudDialog = new CloudManualsDialog(owner, g -> {
+            if (g != null) comm.getManual(g.getFileName());
+        });
+        comm.getGames(comm.getMyName());
+        cloudDialog.setVisible(true);
     }
 
     private static String stripStateSuffix(String name) {
@@ -364,8 +397,20 @@ public class LobbyScene implements Scene, GameClient {
                 sender != null && sender.equals(comm.getMyName())));
     }
 
-    @Override public void onGameList(ArrayList<Game> games) { /* 后续 commit */ }
-    @Override public void onManual(Manual manual) { /* 后续 commit */ }
+    @Override public void onGameList(ArrayList<Game> games) {
+        runOnEdt(() -> {
+            if (cloudDialog != null) cloudDialog.setData(games);
+        });
+    }
+
+    @Override public void onManual(Manual manual) {
+        runOnEdt(() -> {
+            if (cloudDialog != null) cloudDialog.dispose();
+            cloudDialog = null;
+            if (manual == null) { GToast.error(rootPanel, "棋谱获取失败"); return; }
+            router.push(new ReviewScene(router, manual));
+        });
+    }
 
     @Override public void onDisconnected() {
         runOnEdt(() -> {
