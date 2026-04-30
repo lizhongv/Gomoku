@@ -42,7 +42,7 @@ public class Evaluate {
 		}
 	}
 
-	int[] getTheBestPosition() {
+	public int[] getTheBestPosition() {
 		for (int i = 0; i <= AiBoard.COLS; i++) {
 			for (int j = 0; j <= AiBoard.ROWS; j++) {
 				blackValue[i][j] = 0;
