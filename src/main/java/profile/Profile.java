@@ -19,6 +19,22 @@ public class Profile {
 	public long   firstUseMillis = 0;
 	public boolean onboardingDone = false;
 
+	// === 段位（阶段一本地 ELO）===
+	public int  elo = 1200;
+	public int  peakElo = 1200;
+	public int  weeklyWins = 0;
+	public int  weeklyLosses = 0;
+	public long weekStartMillis = 0;
+
+	// === 皮肤 / 商店 ===
+	public String skinId = "classic";
+	public String unlockedSkinIds = "classic";
+
+	// === 金币 / 签到 ===
+	public int  coins = 0;
+	public String lastCheckinDate = "";
+	public int  consecutiveCheckinDays = 0;
+
 	public int totalGames() { return aiWins + aiLosses + onlineWins + onlineLosses; }
 
 	public int winRate() {
@@ -74,11 +90,26 @@ public class Profile {
 		p.firstUseMillis  = Long.parseLong(props.getProperty("firstUseMillis",
 				String.valueOf(System.currentTimeMillis())));
 		p.onboardingDone  = "true".equalsIgnoreCase(props.getProperty("onboardingDone", "false"));
+		p.elo                    = parseInt(props, "elo", 1200);
+		p.peakElo                = parseInt(props, "peakElo", 1200);
+		p.weeklyWins             = parseInt(props, "weeklyWins", 0);
+		p.weeklyLosses           = parseInt(props, "weeklyLosses", 0);
+		p.weekStartMillis        = parseLong(props, "weekStartMillis", 0);
+		p.skinId                 = props.getProperty("skinId", "classic");
+		p.unlockedSkinIds        = props.getProperty("unlockedSkinIds", "classic");
+		p.coins                  = parseInt(props, "coins", 0);
+		p.lastCheckinDate        = props.getProperty("lastCheckinDate", "");
+		p.consecutiveCheckinDays = parseInt(props, "consecutiveCheckinDays", 0);
 		return p;
 	}
 
 	private static int parseInt(Properties p, String k, int dft) {
 		try { return Integer.parseInt(p.getProperty(k, String.valueOf(dft))); }
+		catch (NumberFormatException e) { return dft; }
+	}
+
+	private static long parseLong(Properties p, String k, long dft) {
+		try { return Long.parseLong(p.getProperty(k, String.valueOf(dft))); }
 		catch (NumberFormatException e) { return dft; }
 	}
 
@@ -91,6 +122,16 @@ public class Profile {
 		props.setProperty("onlineLosses", String.valueOf(onlineLosses));
 		props.setProperty("firstUseMillis", String.valueOf(firstUseMillis));
 		props.setProperty("onboardingDone", String.valueOf(onboardingDone));
+		props.setProperty("elo", String.valueOf(elo));
+		props.setProperty("peakElo", String.valueOf(peakElo));
+		props.setProperty("weeklyWins", String.valueOf(weeklyWins));
+		props.setProperty("weeklyLosses", String.valueOf(weeklyLosses));
+		props.setProperty("weekStartMillis", String.valueOf(weekStartMillis));
+		props.setProperty("skinId", skinId == null ? "classic" : skinId);
+		props.setProperty("unlockedSkinIds", unlockedSkinIds == null ? "classic" : unlockedSkinIds);
+		props.setProperty("coins", String.valueOf(coins));
+		props.setProperty("lastCheckinDate", lastCheckinDate == null ? "" : lastCheckinDate);
+		props.setProperty("consecutiveCheckinDays", String.valueOf(consecutiveCheckinDays));
 		try (FileOutputStream out = new FileOutputStream(file())) {
 			props.store(out, "Gomoku player profile");
 		} catch (IOException ignored) {}
