@@ -146,16 +146,31 @@ public class GameScene implements Scene {
             router.pop();
         });
         side.add(backBtn);
+        side.add(Box.createVerticalGlue());
 
-        JPanel sideWrap = new JPanel(new BorderLayout());
+        final JPanel sideWrap = new JPanel(new BorderLayout());
         sideWrap.setOpaque(false);
         sideWrap.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, t.space5));
+        sideWrap.setMinimumSize(new Dimension(180, 0));
         sideWrap.setPreferredSize(new Dimension(240, 10));
-        sideWrap.add(side, BorderLayout.NORTH);
+        sideWrap.add(side, BorderLayout.CENTER);
         rootPanel.add(sideWrap, BorderLayout.EAST);
 
         chat = new ChatPanel();
+        chat.setMinimumSize(new Dimension(0, 80));
         chat.setPreferredSize(new Dimension(10, 130));
+
+        rootPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentResized(java.awt.event.ComponentEvent e) {
+                int w = rootPanel.getWidth();
+                int h = rootPanel.getHeight();
+                int sideW = Math.max(180, Math.min(320, (int) (w * 0.22)));
+                sideWrap.setPreferredSize(new Dimension(sideW, 10));
+                int chatH = Math.max(80, Math.min(180, (int) (h * 0.18)));
+                chat.setPreferredSize(new Dimension(10, chatH));
+                rootPanel.revalidate();
+            }
+        });
         JPanel chatWrap = new JPanel(new BorderLayout());
         chatWrap.setOpaque(false);
         chatWrap.setBorder(BorderFactory.createEmptyBorder(0, t.space5, t.space3, t.space5));
