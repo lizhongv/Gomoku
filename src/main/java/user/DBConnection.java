@@ -22,15 +22,14 @@ public class DBConnection {
 			Class.forName("com.mysql.cj.jdbc.Driver");
 			conn = DriverManager.getConnection(getUrl(), getUser(), getPassword());
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			System.exit(-1);
+			System.err.println("[DBConnection] MySQL 驱动缺失，DB 操作不可用：" + e.getMessage());
 		} catch (SQLException e) {
-			e.printStackTrace();
+			System.err.println("[DBConnection] 无法连接 MySQL：" + e.getMessage());
 			if (conn != null) {
 				try {
 					conn.close();
 				} catch (SQLException e1) {
-					e1.printStackTrace();
+					// ignore
 				}
 			}
 		}

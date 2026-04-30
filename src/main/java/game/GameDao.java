@@ -1,4 +1,4 @@
-// 棋局数据访问
+// 棋局数据访问。文件兜底模式（默认）下走 FileGameStore；DB 模式走 MySQL。
 package game;
 
 import java.sql.Connection;
@@ -6,12 +6,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 import user.DBConnection;
+import user.StorageMode;
 
 public class GameDao {
 
 	public boolean addGame(Game game) {
+		if (StorageMode.useFiles()) {
+			return FileGameStore.addGame(game);
+		}
 		String sql = "insert into game(gameDate,playerBlack,playerWhite,winner,manualFileName) values(?,?,?,?,?)";
 		try (Connection conn = new DBConnection().getConn();
 				PreparedStatement pst = conn.prepareStatement(sql)) {
@@ -29,6 +34,10 @@ public class GameDao {
 	}
 
 	public ArrayList<Game> getGame(String userName) {
+		if (StorageMode.useFiles()) {
+			List<Game> all = FileGameStore.getGames(userName);
+			return new ArrayList<>(all);
+		}
 		ArrayList<Game> games = new ArrayList<Game>();
 		String sql = "select playerBlack, playerWhite, gameDate, winner, manualFileName "
 				+ "from game where playerBlack = ? or playerWhite = ?";

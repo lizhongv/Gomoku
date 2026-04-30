@@ -42,6 +42,7 @@ public class FiveServer extends Frame implements ActionListener {
 	CopyOnWriteArrayList<Client> clients = new CopyOnWriteArrayList<Client>();
 
 	public static void main(String[] args) {
+		System.out.println("[FiveServer] 存储模式: " + user.StorageMode.current());
 		FiveServer fs = new FiveServer();
 		fs.startServser();
 	}

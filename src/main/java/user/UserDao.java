@@ -1,4 +1,5 @@
 // 用户管理类：在 user 表中添加 / 查找用户
+// 默认走文件存储兜底（无需 MySQL）；可通过 FIVE_DB_TYPE=mysql 强制走 DB
 package user;
 
 import java.sql.Connection;
@@ -10,6 +11,9 @@ import java.util.Date;
 public class UserDao {
 
 	public boolean addUser(User user) {
+		if (StorageMode.useFiles()) {
+			return FileUserStore.addUser(user);
+		}
 		String userName = user.getUserName();
 		String hashedPassword = PasswordHash.hash(user.getPassWord());
 		String email = user.getEmail();
@@ -42,6 +46,9 @@ public class UserDao {
 	}
 
 	public User getUser(String userName, String passWord) {
+		if (StorageMode.useFiles()) {
+			return FileUserStore.getUser(userName, passWord);
+		}
 		String sql = "select password, email, level, regDate from user where name = ?";
 		try (Connection conn = new DBConnection().getConn();
 				PreparedStatement pst = conn.prepareStatement(sql)) {

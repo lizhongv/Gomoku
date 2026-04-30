@@ -106,7 +106,11 @@ public class E2eTest {
 		log("=== Phase 7: 数据库 + 棋谱文件落地 ===");
 		Thread.sleep(200);
 		String winner = "black".equals(aColor) ? aliceName : bobName;
-		assertTrue("DB 中存在该胜局", dbHasGame(winner));
+		if (user.StorageMode.useFiles()) {
+			assertTrue("文件存储中存在该胜局", game.FileGameStore.countWins(winner) >= 1);
+		} else {
+			assertTrue("DB 中存在该胜局", dbHasGame(winner));
+		}
 		assertTrue("manuals/ 下有 .fiv 棋谱", manualFileExists(winner));
 
 		log("=== Phase 8: 历史棋局查询 ===");
@@ -188,6 +192,13 @@ public class E2eTest {
 	}
 
 	static void cleanupDb(String... users) {
+		if (user.StorageMode.useFiles()) {
+			for (String u : users) {
+				user.FileUserStore.removeUser(u);
+				game.FileGameStore.removeAllForUser(u);
+			}
+			return;
+		}
 		try (java.sql.Connection c = java.sql.DriverManager.getConnection(
 				user.DBConnection.getUrl(), user.DBConnection.getUser(), user.DBConnection.getPassword())) {
 			for (String u : users) {
