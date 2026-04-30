@@ -23,11 +23,17 @@ build_fatjar() {
     cp -r target/classes/. "$stage/"
     # 2) JDBC 驱动展开
     (cd "$stage" && jar xf "../../$JDBC")
-    # 3) 干掉 JDBC 的 MANIFEST + 签名（重打包必须移除签名，否则 SecurityException）
+    # 3) 客户端额外依赖：FlatLaf + animated-gif-lib（服务端用不上但展开也无害）
+    if [ "$out_name" = "gomoku-client.jar" ]; then
+        for extra in lib/flatlaf-*.jar lib/animated-gif-lib-*.jar; do
+            [ -f "$extra" ] && (cd "$stage" && jar xf "../../$extra")
+        done
+    fi
+    # 4) 干掉所有 MANIFEST + 签名（重打包必须移除签名，否则 SecurityException）
     rm -f "$stage"/META-INF/MANIFEST.MF
     rm -f "$stage"/META-INF/*.SF "$stage"/META-INF/*.RSA "$stage"/META-INF/*.DSA 2>/dev/null || true
 
-    # 4) 重新打包，主类写到 MANIFEST
+    # 5) 重新打包，主类写到 MANIFEST
     jar --create --file "target/$out_name" --main-class "$main_class" -C "$stage" .
 
     rm -rf "$stage"
@@ -36,7 +42,7 @@ build_fatjar() {
 
 echo "Packaging fat jars..."
 build_fatjar gomoku-server.jar server.FiveServer
-build_fatjar gomoku-client.jar client.FiveClient
+build_fatjar gomoku-client.jar app.Main
 
 echo ""
 echo "Done. 运行方式："

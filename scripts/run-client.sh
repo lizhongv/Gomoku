@@ -5,4 +5,4 @@ case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) SEP=';' ;;
     *) SEP=':' ;;
 esac
-java -cp "target/classes${SEP}lib/*" client.FiveClient
+java -cp "target/classes${SEP}lib/*" app.Main
