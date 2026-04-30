@@ -2,6 +2,8 @@
 package ai;
 
 public class Evaluate {
+	private static final int COLS = 14;
+	private static final int ROWS = 14;
 	private static final int FIVE = 50000;
 	private static final int HUO_FOUR = 5000;
 	private static final int CHONG_FOUR = 1000;
@@ -22,7 +24,7 @@ public class Evaluate {
 	private final int computerColor;
 
 	public Evaluate(int[][] boardSnapshot, int computerColor) {
-		int n = AiBoard.COLS + 1;
+		int n = COLS + 1;
 		this.boardStatus = new int[n][n];
 		for (int i = 0; i < n; i++) {
 			System.arraycopy(boardSnapshot[i], 0, this.boardStatus[i], 0, n);
@@ -32,19 +34,19 @@ public class Evaluate {
 		blackValue = new int[n][n];
 		whiteValue = new int[n][n];
 		staticValue = new int[n][n];
-		for (int i = 0; i <= AiBoard.COLS / 2; i++) {
-			for (int j = 0; j <= AiBoard.ROWS / 2; j++) {
+		for (int i = 0; i <= COLS / 2; i++) {
+			for (int j = 0; j <= ROWS / 2; j++) {
 				staticValue[i][j] = i < j ? i : j;
-				staticValue[AiBoard.COLS - i][j] = staticValue[i][j];
-				staticValue[i][AiBoard.ROWS - j] = staticValue[i][j];
-				staticValue[AiBoard.COLS - i][AiBoard.ROWS - j] = staticValue[i][j];
+				staticValue[COLS - i][j] = staticValue[i][j];
+				staticValue[i][ROWS - j] = staticValue[i][j];
+				staticValue[COLS - i][ROWS - j] = staticValue[i][j];
 			}
 		}
 	}
 
 	public int[] getTheBestPosition() {
-		for (int i = 0; i <= AiBoard.COLS; i++) {
-			for (int j = 0; j <= AiBoard.ROWS; j++) {
+		for (int i = 0; i <= COLS; i++) {
+			for (int j = 0; j <= ROWS; j++) {
 				blackValue[i][j] = 0;
 				whiteValue[i][j] = 0;
 				if (boardStatus[i][j] == 0) {
@@ -82,8 +84,8 @@ public class Evaluate {
 		if (depth == 0) {
 			return evaluateGame();
 		}
-		for (int i = 0; i <= AiBoard.COLS; i++) {
-			for (int j = 0; j <= AiBoard.ROWS; j++) {
+		for (int i = 0; i <= COLS; i++) {
+			for (int j = 0; j <= ROWS; j++) {
 				blackValue[i][j] = 0;
 				whiteValue[i][j] = 0;
 				if (boardStatus[i][j] == 0) {
@@ -123,8 +125,8 @@ public class Evaluate {
 		if (depth == 0) {
 			return evaluateGame();
 		}
-		for (int i = 0; i <= AiBoard.COLS; i++) {
-			for (int j = 0; j <= AiBoard.ROWS; j++) {
+		for (int i = 0; i <= COLS; i++) {
+			for (int j = 0; j <= ROWS; j++) {
 				blackValue[i][j] = 0;
 				whiteValue[i][j] = 0;
 				if (boardStatus[i][j] == 0) {
@@ -163,48 +165,48 @@ public class Evaluate {
 	private int evaluateGame() {
 		int value = 0;
 		int i, j, k;
-		int[] line = new int[AiBoard.COLS + 1];
-		for (j = 0; j <= AiBoard.ROWS; j++) {
-			for (i = 0; i <= AiBoard.COLS; i++) {
+		int[] line = new int[COLS + 1];
+		for (j = 0; j <= ROWS; j++) {
+			for (i = 0; i <= COLS; i++) {
 				line[i] = boardStatus[i][j];
 			}
-			value += evaluateLine(line, AiBoard.COLS + 1, 1);
-			value -= evaluateLine(line, AiBoard.COLS + 1, 2);
+			value += evaluateLine(line, COLS + 1, 1);
+			value -= evaluateLine(line, COLS + 1, 2);
 		}
-		for (i = 0; i <= AiBoard.COLS; i++) {
-			for (j = 0; j <= AiBoard.ROWS; j++) {
+		for (i = 0; i <= COLS; i++) {
+			for (j = 0; j <= ROWS; j++) {
 				line[j] = boardStatus[i][j];
 			}
-			value += evaluateLine(line, AiBoard.ROWS + 1, 1);
-			value -= evaluateLine(line, AiBoard.ROWS + 1, 2);
+			value += evaluateLine(line, ROWS + 1, 1);
+			value -= evaluateLine(line, ROWS + 1, 2);
 		}
-		for (j = 4; j <= AiBoard.ROWS; j++) {
+		for (j = 4; j <= ROWS; j++) {
 			for (k = 0; k <= j; k++) {
 				line[k] = boardStatus[k][j - k];
 			}
 			value += evaluateLine(line, j + 1, 1);
 			value -= evaluateLine(line, j + 1, 2);
 		}
-		for (j = 1; j <= AiBoard.ROWS - 4; j++) {
-			for (k = 0; k <= AiBoard.COLS - j; k++) {
-				line[k] = boardStatus[k + j][AiBoard.ROWS - k];
+		for (j = 1; j <= ROWS - 4; j++) {
+			for (k = 0; k <= COLS - j; k++) {
+				line[k] = boardStatus[k + j][ROWS - k];
 			}
-			value += evaluateLine(line, AiBoard.ROWS + 1 - j, 1);
-			value -= evaluateLine(line, AiBoard.ROWS + 1 - j, 2);
+			value += evaluateLine(line, ROWS + 1 - j, 1);
+			value -= evaluateLine(line, ROWS + 1 - j, 2);
 		}
-		for (j = 0; j <= AiBoard.ROWS - 4; j++) {
-			for (k = 0; k <= AiBoard.ROWS - j; k++) {
+		for (j = 0; j <= ROWS - 4; j++) {
+			for (k = 0; k <= ROWS - j; k++) {
 				line[k] = boardStatus[k][k + j];
 			}
-			value += evaluateLine(line, AiBoard.ROWS + 1 - j, 1);
-			value -= evaluateLine(line, AiBoard.ROWS + 1 - j, 2);
+			value += evaluateLine(line, ROWS + 1 - j, 1);
+			value -= evaluateLine(line, ROWS + 1 - j, 2);
 		}
-		for (i = 1; i <= AiBoard.COLS - 4; i++) {
-			for (k = 0; k <= AiBoard.ROWS - i; k++) {
+		for (i = 1; i <= COLS - 4; i++) {
+			for (k = 0; k <= ROWS - i; k++) {
 				line[k] = boardStatus[k + i][k];
 			}
-			value += evaluateLine(line, AiBoard.ROWS + 1 - i, 1);
-			value -= evaluateLine(line, AiBoard.ROWS + 1 - i, 2);
+			value += evaluateLine(line, ROWS + 1 - i, 1);
+			value -= evaluateLine(line, ROWS + 1 - i, 2);
 		}
 		return computerColor == 1 ? value : -value;
 	}
@@ -276,16 +278,16 @@ public class Evaluate {
 		int spaceCount4 = 0;
 		switch (dir) {
 			case 1:
-				for (k = col + 1; k <= AiBoard.COLS; k++) {
+				for (k = col + 1; k <= COLS; k++) {
 					if (boardStatus[k][row] == color) chessCount1++;
 					else break;
 				}
-				while ((k <= AiBoard.COLS) && (boardStatus[k][row] == 0)) {
+				while ((k <= COLS) && (boardStatus[k][row] == 0)) {
 					spaceCount1++; k++;
 				}
 				if (spaceCount1 == 1) {
-					while ((k <= AiBoard.COLS) && (boardStatus[k][row] == color)) { chessCount2++; k++; }
-					while ((k <= AiBoard.COLS) && (boardStatus[k][row] == 0)) { spaceCount2++; k++; }
+					while ((k <= COLS) && (boardStatus[k][row] == color)) { chessCount2++; k++; }
+					while ((k <= COLS) && (boardStatus[k][row] == 0)) { spaceCount2++; k++; }
 				}
 				for (k = col - 1; k >= 0; k--) {
 					if (boardStatus[k][row] == color) chessCount1++;
@@ -298,14 +300,14 @@ public class Evaluate {
 				}
 				break;
 			case 2:
-				for (k = row + 1; k <= AiBoard.ROWS; k++) {
+				for (k = row + 1; k <= ROWS; k++) {
 					if (boardStatus[col][k] == color) chessCount1++;
 					else break;
 				}
-				while ((k <= AiBoard.ROWS) && (boardStatus[col][k] == 0)) { spaceCount1++; k++; }
+				while ((k <= ROWS) && (boardStatus[col][k] == 0)) { spaceCount1++; k++; }
 				if (spaceCount1 == 1) {
-					while ((k <= AiBoard.ROWS) && (boardStatus[col][k] == color)) { chessCount2++; k++; }
-					while ((k <= AiBoard.ROWS) && (boardStatus[col][k] == 0)) { spaceCount2++; k++; }
+					while ((k <= ROWS) && (boardStatus[col][k] == color)) { chessCount2++; k++; }
+					while ((k <= ROWS) && (boardStatus[col][k] == 0)) { spaceCount2++; k++; }
 				}
 				for (k = row - 1; k >= 0; k--) {
 					if (boardStatus[col][k] == color) chessCount1++;
@@ -318,18 +320,18 @@ public class Evaluate {
 				}
 				break;
 			case 3:
-				for (k = col + 1, m = row + 1; (k <= AiBoard.COLS) && (m <= AiBoard.ROWS); k++, m++) {
+				for (k = col + 1, m = row + 1; (k <= COLS) && (m <= ROWS); k++, m++) {
 					if (boardStatus[k][m] == color) chessCount1++;
 					else break;
 				}
-				while ((k <= AiBoard.COLS) && (m <= AiBoard.ROWS) && (boardStatus[k][m] == 0)) {
+				while ((k <= COLS) && (m <= ROWS) && (boardStatus[k][m] == 0)) {
 					spaceCount1++; k++; m++;
 				}
 				if (spaceCount1 == 1) {
-					while ((k <= AiBoard.COLS) && (m <= AiBoard.ROWS) && (boardStatus[k][m] == color)) {
+					while ((k <= COLS) && (m <= ROWS) && (boardStatus[k][m] == color)) {
 						chessCount2++; k++; m++;
 					}
-					while ((k <= AiBoard.COLS) && (m <= AiBoard.ROWS) && (boardStatus[k][m] == 0)) {
+					while ((k <= COLS) && (m <= ROWS) && (boardStatus[k][m] == 0)) {
 						spaceCount2++; k++; m++;
 					}
 				}
@@ -348,33 +350,33 @@ public class Evaluate {
 				}
 				break;
 			case 4:
-				for (k = col + 1, m = row - 1; (k <= AiBoard.COLS) && (m >= 0); k++, m--) {
+				for (k = col + 1, m = row - 1; (k <= COLS) && (m >= 0); k++, m--) {
 					if (boardStatus[k][m] == color) chessCount1++;
 					else break;
 				}
-				while ((k <= AiBoard.COLS) && (m >= 0) && (boardStatus[k][m] == 0)) {
+				while ((k <= COLS) && (m >= 0) && (boardStatus[k][m] == 0)) {
 					spaceCount1++; k++; m--;
 				}
 				if (spaceCount1 == 1) {
-					while ((k <= AiBoard.COLS) && (m >= 0) && (boardStatus[k][m] == color)) {
+					while ((k <= COLS) && (m >= 0) && (boardStatus[k][m] == color)) {
 						chessCount2++; k++; m--;
 					}
-					while ((k <= AiBoard.COLS) && (m >= 0) && (boardStatus[k][m] == 0)) {
+					while ((k <= COLS) && (m >= 0) && (boardStatus[k][m] == 0)) {
 						spaceCount2++; k++; m--;
 					}
 				}
-				for (k = col - 1, m = row + 1; (k >= 0) && (m <= AiBoard.ROWS); k--, m++) {
+				for (k = col - 1, m = row + 1; (k >= 0) && (m <= ROWS); k--, m++) {
 					if (boardStatus[k][m] == color) chessCount1++;
 					else break;
 				}
-				while ((k >= 0) && (m <= AiBoard.ROWS) && (boardStatus[k][m] == 0)) {
+				while ((k >= 0) && (m <= ROWS) && (boardStatus[k][m] == 0)) {
 					spaceCount3++; k--; m++;
 				}
 				if (spaceCount3 == 1) {
-					while ((k >= 0) && (m <= AiBoard.ROWS) && (boardStatus[k][m] == color)) {
+					while ((k >= 0) && (m <= ROWS) && (boardStatus[k][m] == color)) {
 						chessCount3++; k--; m++;
 					}
-					while ((k >= 0) && (m <= AiBoard.ROWS) && (boardStatus[k][m] == 0)) {
+					while ((k >= 0) && (m <= ROWS) && (boardStatus[k][m] == 0)) {
 						spaceCount4++; k--; m++;
 					}
 				}
@@ -443,9 +445,9 @@ public class Evaluate {
 
 	private int[][] getTheMostValuablePositions() {
 		int i, j, k = 0;
-		int[][] allValue = new int[(AiBoard.COLS + 1) * (AiBoard.ROWS + 1)][3];
-		for (i = 0; i <= AiBoard.COLS; i++) {
-			for (j = 0; j <= AiBoard.ROWS; j++) {
+		int[][] allValue = new int[(COLS + 1) * (ROWS + 1)][3];
+		for (i = 0; i <= COLS; i++) {
+			for (j = 0; j <= ROWS; j++) {
 				if (boardStatus[i][j] == 0) {
 					allValue[k][0] = i;
 					allValue[k][1] = j;
