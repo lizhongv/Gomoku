@@ -3,6 +3,7 @@ package app;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import com.formdev.flatlaf.FlatLightLaf;
+import feature.rank.RankSubscriber;
 import feature.skin.SkinManager;
 import feature.sound.SoundManager;
 import feature.sound.SoundSubscriber;
@@ -17,6 +18,7 @@ public class Main {
         SkinManager.init();
         SoundManager.preload();
         SoundSubscriber.install();
+        RankSubscriber.install();
 
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Gomoku 五子棋");
