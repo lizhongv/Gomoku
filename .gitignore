@@ -20,3 +20,4 @@ manuals/*.fiv
 
 # 旧版残留（保留 .gitkeep 占位）
 img/*.fiv
+.superpowers/
