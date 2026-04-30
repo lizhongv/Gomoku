@@ -81,11 +81,10 @@ public class PurchaseDialog extends GDialog {
             }
         });
 
-        GButton trialBtn = GButton.secondary("试用一局（占位）");
+        GButton trialBtn = GButton.secondary("试用 30 分钟");
         trialBtn.addActionListener(e -> {
-            SkinManager.unlock(skin.id);
-            SkinManager.setCurrent(skin.id);
-            GToast.info(owner, "已试用");
+            SkinManager.startTrial(skin.id, 30L * 60L * 1000L);
+            GToast.info(owner, "试用已开始（30 分钟或下次对局结束失效）");
             dispose();
         });
 

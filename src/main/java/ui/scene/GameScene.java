@@ -126,6 +126,22 @@ public class GameScene implements Scene {
         side.add(emojiBtn);
         side.add(Box.createVerticalStrut(t.space2));
 
+        if (session instanceof net.AiGameSession) {
+            GButton undoBtn = GButton.secondary("悔棋（库存 " + Profile.get().undoTickets + "）");
+            undoBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+            undoBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+            undoBtn.addActionListener(e -> doUndo(undoBtn));
+            side.add(undoBtn);
+            side.add(Box.createVerticalStrut(t.space2));
+
+            GButton hintBtn = GButton.secondary("提示（库存 " + Profile.get().hintTickets + "）");
+            hintBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+            hintBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+            hintBtn.addActionListener(e -> doHint(hintBtn));
+            side.add(hintBtn);
+            side.add(Box.createVerticalStrut(t.space2));
+        }
+
         GButton giveupBtn = GButton.secondary("认输");
         giveupBtn.setForeground(t.danger);
         giveupBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -184,6 +200,58 @@ public class GameScene implements Scene {
     }
 
     private static String safe(String s) { return (s == null || s.isEmpty()) ? "对手" : s; }
+
+    private void doUndo(GButton btn) {
+        if (ended) return;
+        if (!(session instanceof net.AiGameSession)) return;
+        net.AiGameSession ai = (net.AiGameSession) session;
+        Profile p = Profile.get();
+        if (p.undoTickets <= 0) {
+            GToast.error(rootPanel, "悔棋券不足，请前往商店购买");
+            return;
+        }
+        if (!ai.canUndo()) {
+            GToast.info(rootPanel, "无可悔之手（请等到自己刚落子后）");
+            return;
+        }
+        if (!ai.undoLastTwoMoves()) {
+            GToast.error(rootPanel, "悔棋失败");
+            return;
+        }
+        p.undoTickets--;
+        p.save();
+        java.util.List<int[]> hist = ai.historyMoves();
+        java.util.List<GBoard.Stone> stones = new java.util.ArrayList<>();
+        for (int i = 0; i < hist.size(); i++) {
+            int[] m = hist.get(i);
+            boolean isBlack = (i % 2 == 0);
+            stones.add(new GBoard.Stone(m[0], m[1], isBlack));
+        }
+        board.setStones(stones);
+        btn.setText("悔棋（库存 " + p.undoTickets + "）");
+        GToast.success(rootPanel, "已撤回最近一手 + AI 上一手");
+    }
+
+    private void doHint(GButton btn) {
+        if (ended) return;
+        if (!(session instanceof net.AiGameSession)) return;
+        net.AiGameSession ai = (net.AiGameSession) session;
+        Profile p = Profile.get();
+        if (p.hintTickets <= 0) {
+            GToast.error(rootPanel, "提示卡不足，请前往商店购买");
+            return;
+        }
+        int[] hint = ai.hintMove();
+        if (hint == null) {
+            GToast.error(rootPanel, "无法生成提示");
+            return;
+        }
+        p.hintTickets--;
+        p.save();
+        board.flashHint(hint[0], hint[1], 5000);
+        btn.setText("提示（库存 " + p.hintTickets + "）");
+        GToast.info(rootPanel, "建议落子: 列 " + hint[0] + ", 行 " + hint[1] + "（5 秒后消失）");
+    }
 
     private void showEmotePicker() {
         java.awt.Window owner = SwingUtilities.getWindowAncestor(rootPanel);

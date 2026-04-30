@@ -27,12 +27,39 @@ public class AiGameSession implements GameSession {
     public AiGameSession(String myColor, int aiDepth, int aiSamples) {
         this.myColor = (myColor != null) ? myColor : "black";
         this.seconds = 300;
-        this.aiDepth = aiDepth;
-        this.aiSamples = aiSamples;
+        boolean fast = profile.Profile.get().aiFastMode;
+        this.aiDepth = fast ? Math.max(1, aiDepth - 1) : aiDepth;
+        this.aiSamples = fast ? Math.max(3, aiSamples - 2) : aiSamples;
     }
 
     public int aiDepth() { return aiDepth; }
     public int aiSamples() { return aiSamples; }
+
+    public boolean canUndo() {
+        return !finished && moves.size() >= 2;
+    }
+
+    public boolean undoLastTwoMoves() {
+        if (!canUndo()) return false;
+        if (currentWorker != null) currentWorker.cancel(true);
+        pendingGen++;
+        for (int i = 0; i < 2 && !moves.isEmpty(); i++) {
+            int[] last = moves.remove(moves.size() - 1);
+            board[last[0]][last[1]] = 0;
+            chessCount = Math.max(0, chessCount - 1);
+        }
+        emit(new GameSessionEvent(EventType.MY_TURN));
+        return true;
+    }
+
+    public int[] hintMove() {
+        if (finished) return null;
+        return new Evaluate(snapshot(), myCode(), aiDepth, aiSamples).getTheBestPosition();
+    }
+
+    public java.util.List<int[]> historyMoves() {
+        return new ArrayList<>(moves);
+    }
 
     @Override public String myColor() { return myColor; }
     @Override public String opponentName() { return "AI"; }
@@ -109,7 +136,7 @@ public class AiGameSession implements GameSession {
         currentWorker = new SwingWorker<int[], Void>() {
             @Override
             protected int[] doInBackground() {
-                return new Evaluate(snap, aiColor).getTheBestPosition();
+                return new Evaluate(snap, aiColor, aiDepth, aiSamples).getTheBestPosition();
             }
 
             @Override

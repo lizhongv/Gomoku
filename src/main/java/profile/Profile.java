@@ -41,6 +41,18 @@ public class Profile {
 	public int    aiDefaultDepth = 3;
 	public int    inviteSeconds = 300;
 
+	// === VIP / 道具 ===
+	public long vipUntilMillis = 0;
+	public int  undoTickets = 0;
+	public int  hintTickets = 0;
+	public boolean aiFastMode = false;
+
+	public boolean isVip() { return vipUntilMillis > System.currentTimeMillis(); }
+	public long vipRemainingMillis() {
+		long now = System.currentTimeMillis();
+		return vipUntilMillis > now ? (vipUntilMillis - now) : 0;
+	}
+
 	public int totalGames() { return aiWins + aiLosses + onlineWins + onlineLosses; }
 
 	public int winRate() {
@@ -110,6 +122,10 @@ public class Profile {
 		p.fontFamily             = props.getProperty("fontFamily", "default");
 		p.aiDefaultDepth         = parseInt(props, "aiDefaultDepth", 3);
 		p.inviteSeconds          = parseInt(props, "inviteSeconds", 300);
+		p.vipUntilMillis         = parseLong(props, "vipUntilMillis", 0);
+		p.undoTickets            = parseInt(props, "undoTickets", 0);
+		p.hintTickets            = parseInt(props, "hintTickets", 0);
+		p.aiFastMode             = "true".equalsIgnoreCase(props.getProperty("aiFastMode", "false"));
 		return p;
 	}
 
@@ -146,6 +162,10 @@ public class Profile {
 		props.setProperty("fontFamily", fontFamily == null ? "default" : fontFamily);
 		props.setProperty("aiDefaultDepth", String.valueOf(aiDefaultDepth));
 		props.setProperty("inviteSeconds", String.valueOf(inviteSeconds));
+		props.setProperty("vipUntilMillis", String.valueOf(vipUntilMillis));
+		props.setProperty("undoTickets", String.valueOf(undoTickets));
+		props.setProperty("hintTickets", String.valueOf(hintTickets));
+		props.setProperty("aiFastMode", String.valueOf(aiFastMode));
 		try (FileOutputStream out = new FileOutputStream(file())) {
 			props.store(out, "Gomoku player profile");
 		} catch (IOException ignored) {}

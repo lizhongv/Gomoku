@@ -1,5 +1,6 @@
 package feature.shop;
 
+import profile.Profile;
 import ui.EventBus;
 import ui.events.GameEndEvent;
 import ui.events.GameStartEvent;
@@ -18,6 +19,10 @@ public final class CoinEarnSubscriber {
             } else {
                 reward = 5;
                 reason = "AI 胜利";
+            }
+            if (Profile.get().isVip()) {
+                reward *= 2;
+                reason += "（VIP 双倍）";
             }
             CoinManager.add(reward, reason);
         });

@@ -206,61 +206,198 @@ public class ShopScene implements Scene {
         Tokens t = Theme.tokens();
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, t.space4, t.space4));
         panel.setOpaque(false);
-        String[] items = {"悔棋券", "提示卡", "VIP 体验", "棋盘格调"};
-        for (String name : items) {
+        Profile p = Profile.get();
+        Object[][] items = {
+            {"悔棋券",    "↶", "AI 对局中撤回最近一手", 500,  "undo",  String.valueOf(p.undoTickets) + " 张"},
+            {"提示卡",    "💡", "高亮一个推荐落子位置",   300,  "hint",  String.valueOf(p.hintTickets) + " 张"},
+            {"VIP 体验",  "👑", "7 天 VIP（金币双倍 + 全皮肤）", 1000, "vip7", p.isVip() ? "VIP 中" : "未持有"},
+            {"AI 加速",   "⚡", "AI 思考更快，开/关切换",  200,  "fast",  p.aiFastMode ? "已开启" : "未开启"}
+        };
+        for (Object[] item : items) {
+            String name = (String) item[0];
+            String emo  = (String) item[1];
+            String desc = (String) item[2];
+            int    price= (Integer) item[3];
+            String code = (String) item[4];
+            String stat = (String) item[5];
             GCard c = new GCard(true);
             c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));
-            c.setPreferredSize(new Dimension(200, 260));
-            JLabel emoji = new JLabel("🚧", SwingConstants.CENTER);
+            c.setPreferredSize(new Dimension(220, 280));
+            JLabel emoji = new JLabel(emo, SwingConstants.CENTER);
             emoji.setFont(t.fontDisplay);
             emoji.setAlignmentX(Component.CENTER_ALIGNMENT);
-            JLabel n = new JLabel(name);
-            n.setFont(t.fontHeading);
-            n.setForeground(t.fgDefault);
-            n.setAlignmentX(Component.CENTER_ALIGNMENT);
-            JLabel sub = new JLabel("敬请期待");
-            sub.setFont(t.fontBody);
-            sub.setForeground(t.fgMuted);
-            sub.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JLabel nLbl = new JLabel(name);
+            nLbl.setFont(t.fontHeading);
+            nLbl.setForeground(t.fgDefault);
+            nLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JLabel descLbl = new JLabel("<html><div style='text-align:center;'>" + desc + "</div></html>");
+            descLbl.setFont(t.fontCaption);
+            descLbl.setForeground(t.fgMuted);
+            descLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JLabel statLbl = new JLabel("当前: " + stat);
+            statLbl.setFont(t.fontCaption);
+            statLbl.setForeground(t.fgDefault);
+            statLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JPanel chipWrap = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+            chipWrap.setOpaque(false);
+            chipWrap.add(new GChip(price + " 金币", t.warning, t.fgOnAccent));
+            chipWrap.setAlignmentX(Component.CENTER_ALIGNMENT);
+            String btnLabel;
+            if ("fast".equals(code)) btnLabel = p.aiFastMode ? "关闭加速" : (price + " 💰 启用");
+            else if ("vip7".equals(code) && p.isVip()) btnLabel = "续期 7 天";
+            else btnLabel = price + " 💰 购买";
+            GButton buy = GButton.primary(btnLabel);
+            buy.setAlignmentX(Component.CENTER_ALIGNMENT);
+            boolean canAfford = CoinManager.balance() >= price;
+            if (!canAfford && !("fast".equals(code) && p.aiFastMode)) buy.setEnabled(false);
+            buy.addActionListener(e -> handleItemPurchase(code, price));
             c.add(Box.createVerticalGlue());
             c.add(emoji);
-            c.add(Box.createVerticalStrut(t.space2));
-            c.add(n);
             c.add(Box.createVerticalStrut(t.space1));
-            c.add(sub);
+            c.add(nLbl);
+            c.add(Box.createVerticalStrut(t.space1));
+            c.add(descLbl);
+            c.add(Box.createVerticalStrut(t.space2));
+            c.add(statLbl);
+            c.add(Box.createVerticalStrut(t.space1));
+            c.add(chipWrap);
+            c.add(Box.createVerticalStrut(t.space2));
+            c.add(buy);
             c.add(Box.createVerticalGlue());
             panel.add(c);
         }
         return panel;
     }
 
+    private void handleItemPurchase(String code, int price) {
+        Profile p = Profile.get();
+        if ("fast".equals(code) && p.aiFastMode) {
+            p.aiFastMode = false;
+            p.save();
+            ui.component.GToast.success(rootPanel, "已关闭 AI 加速");
+            refresh();
+            return;
+        }
+        if (!CoinManager.spend(price, "购买道具 " + code)) {
+            ui.component.GToast.error(rootPanel, "金币不足");
+            return;
+        }
+        switch (code) {
+            case "undo":
+                p.undoTickets += 1;
+                ui.component.GToast.success(rootPanel, "已购入 1 张悔棋券");
+                break;
+            case "hint":
+                p.hintTickets += 1;
+                ui.component.GToast.success(rootPanel, "已购入 1 张提示卡");
+                break;
+            case "vip7":
+                long base = Math.max(p.vipUntilMillis, System.currentTimeMillis());
+                p.vipUntilMillis = base + 7L * 24L * 3600L * 1000L;
+                ui.component.GToast.success(rootPanel, "VIP 已开通 7 天");
+                break;
+            case "fast":
+                p.aiFastMode = true;
+                ui.component.GToast.success(rootPanel, "AI 加速已启用");
+                break;
+        }
+        p.save();
+        refresh();
+    }
+
     private JPanel buildVipTab() {
         Tokens t = Theme.tokens();
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, t.space4, t.space4));
-        panel.setOpaque(false);
-        GCard c = new GCard(true);
-        c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));
-        c.setPreferredSize(new Dimension(640, 320));
-        JLabel emoji = new JLabel("👑", SwingConstants.CENTER);
-        emoji.setFont(t.fontDisplay);
-        emoji.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel n = new JLabel("VIP 会员");
-        n.setFont(t.fontDisplay);
-        n.setForeground(t.fgDefault);
-        n.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel sub = new JLabel("VIP 会员功能即将上线");
-        sub.setFont(t.fontBody);
-        sub.setForeground(t.fgMuted);
-        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        c.add(Box.createVerticalGlue());
-        c.add(emoji);
-        c.add(Box.createVerticalStrut(t.space3));
-        c.add(n);
-        c.add(Box.createVerticalStrut(t.space2));
-        c.add(sub);
-        c.add(Box.createVerticalGlue());
-        panel.add(c);
-        return panel;
+        JPanel root = new JPanel(new BorderLayout(0, t.space3));
+        root.setOpaque(false);
+        Profile p = Profile.get();
+
+        JPanel hero = new JPanel(new FlowLayout(FlowLayout.CENTER, t.space2, 0));
+        hero.setOpaque(false);
+        JLabel crown = new JLabel("👑");
+        crown.setFont(t.fontDisplay);
+        JLabel hLabel = new JLabel(p.isVip() ? "VIP 会员中" : "VIP 会员");
+        hLabel.setFont(t.fontDisplay);
+        hLabel.setForeground(t.fgDefault);
+        hero.add(crown);
+        hero.add(hLabel);
+
+        JPanel benefits = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        benefits.setOpaque(false);
+        JLabel ben = new JLabel("<html><div style='text-align:center;'>"
+                + "✓ 全部皮肤免费使用 &nbsp; ✓ 胜利金币双倍 &nbsp; ✓ 无购买冷却"
+                + "<br>当前状态: " + (p.isVip()
+                        ? "剩余 " + (p.vipRemainingMillis() / (24L*3600L*1000L)) + " 天"
+                        : "未开通")
+                + "</div></html>");
+        ben.setFont(t.fontBody);
+        ben.setForeground(t.fgMuted);
+        benefits.add(ben);
+
+        JPanel plans = new JPanel(new FlowLayout(FlowLayout.CENTER, t.space4, t.space2));
+        plans.setOpaque(false);
+        Object[][] tiers = {
+            {"月卡",  30,   3000},
+            {"季卡",  90,   8000},
+            {"年卡",  365, 25000}
+        };
+        for (Object[] tier : tiers) {
+            String name = (String) tier[0];
+            int days = (Integer) tier[1];
+            int price = (Integer) tier[2];
+            GCard c = new GCard(true);
+            c.setLayout(new BoxLayout(c, BoxLayout.Y_AXIS));
+            c.setPreferredSize(new Dimension(180, 220));
+            JLabel nm = new JLabel(name);
+            nm.setFont(t.fontTitle);
+            nm.setForeground(t.fgDefault);
+            nm.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JLabel dy = new JLabel(days + " 天");
+            dy.setFont(t.fontBody);
+            dy.setForeground(t.fgMuted);
+            dy.setAlignmentX(Component.CENTER_ALIGNMENT);
+            GChip pc = new GChip(price + " 金币", t.warning, t.fgOnAccent);
+            JPanel pcw = new JPanel(new FlowLayout(FlowLayout.CENTER));
+            pcw.setOpaque(false);
+            pcw.add(pc);
+            pcw.setAlignmentX(Component.CENTER_ALIGNMENT);
+            GButton buy = GButton.primary("购买");
+            buy.setAlignmentX(Component.CENTER_ALIGNMENT);
+            buy.setEnabled(CoinManager.balance() >= price);
+            buy.addActionListener(e -> {
+                if (!CoinManager.spend(price, "VIP " + name)) {
+                    ui.component.GToast.error(rootPanel, "金币不足");
+                    return;
+                }
+                Profile pp = Profile.get();
+                long base = Math.max(pp.vipUntilMillis, System.currentTimeMillis());
+                pp.vipUntilMillis = base + days * 24L * 3600L * 1000L;
+                pp.save();
+                ui.component.GToast.success(rootPanel, "已开通 " + name + " - VIP 续至 "
+                        + new java.text.SimpleDateFormat("yyyy-MM-dd")
+                                .format(new java.util.Date(pp.vipUntilMillis)));
+                refresh();
+            });
+            c.add(Box.createVerticalGlue());
+            c.add(nm);
+            c.add(Box.createVerticalStrut(t.space2));
+            c.add(dy);
+            c.add(Box.createVerticalStrut(t.space2));
+            c.add(pcw);
+            c.add(Box.createVerticalStrut(t.space3));
+            c.add(buy);
+            c.add(Box.createVerticalGlue());
+            plans.add(c);
+        }
+
+        JPanel top = new JPanel();
+        top.setOpaque(false);
+        top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.add(hero);
+        top.add(benefits);
+
+        root.add(top, BorderLayout.NORTH);
+        root.add(plans, BorderLayout.CENTER);
+        return root;
     }
 
     private void refresh() {

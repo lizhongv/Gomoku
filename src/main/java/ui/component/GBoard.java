@@ -40,6 +40,8 @@ public class GBoard extends JComponent implements ThemeAware {
     private boolean hoverIsBlack = true;
     private boolean interactive = true;
     private BiConsumer<Integer, Integer> clickHandler;
+    private int hintCol = -1, hintRow = -1;
+    private Timer hintTimer;
 
     private Timer pulseTimer;
     private double pulsePhase;
@@ -108,6 +110,19 @@ public class GBoard extends JComponent implements ThemeAware {
 
     public void setInteractive(boolean v) { this.interactive = v; }
     public void setHoverIsBlack(boolean v) { this.hoverIsBlack = v; }
+
+    public void flashHint(int col, int row, int durationMs) {
+        if (hintTimer != null) hintTimer.stop();
+        hintCol = col; hintRow = row;
+        repaint();
+        hintTimer = new Timer(Math.max(500, durationMs), e -> {
+            hintCol = -1; hintRow = -1;
+            repaint();
+            ((Timer) e.getSource()).stop();
+        });
+        hintTimer.setRepeats(false);
+        hintTimer.start();
+    }
 
     private void computeLayout() {
         int w = getWidth(), h = getHeight();
@@ -182,6 +197,7 @@ public class GBoard extends JComponent implements ThemeAware {
         }
         for (Stone s : stones) drawStone(g2, ps, s.col, s.row, s.black, 255);
         if (lastMove != null) drawLastMoveRing(g2, tk);
+        if (hintCol >= 0 && hintRow >= 0) drawHintMarker(g2, tk);
         if (interactive && hoverCol >= 0 && hoverRow >= 0) {
             boolean occupied = false;
             for (Stone s : stones) if (s.col == hoverCol && s.row == hoverRow) { occupied = true; break; }
@@ -225,6 +241,19 @@ public class GBoard extends JComponent implements ThemeAware {
         g2.fillOval(x, y, diameter, diameter);
         g2.setColor(new Color(0, 0, 0, Math.min(alpha, 90)));
         g2.drawOval(x, y, diameter - 1, diameter - 1);
+    }
+
+    private void drawHintMarker(Graphics2D g2, Tokens tk) {
+        int diameter = (int) (cellSize * 0.92);
+        int cx = originX + hintCol * cellSize;
+        int cy = originY + hintRow * cellSize;
+        double r = diameter / 2.0 + 4;
+        Color hi = new Color(255, 200, 0, 200);
+        g2.setColor(hi);
+        g2.setStroke(new BasicStroke(3.0f));
+        g2.drawOval((int)(cx - r), (int)(cy - r), (int)(r * 2), (int)(r * 2));
+        g2.setColor(new Color(255, 200, 0, 80));
+        g2.fillOval((int)(cx - r + 2), (int)(cy - r + 2), (int)(r * 2 - 4), (int)(r * 2 - 4));
     }
 
     private void drawLastMoveRing(Graphics2D g2, Tokens tk) {
