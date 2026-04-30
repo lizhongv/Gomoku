@@ -20,6 +20,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import profile.Profile;
 import ui.Theme;
 import ui.component.GAvatar;
@@ -27,6 +28,7 @@ import ui.component.GButton;
 import ui.component.GCard;
 import ui.component.GToast;
 import ui.design.Tokens;
+import ui.scene.dialog.LoginDialog;
 
 public class HomeScene implements Scene {
     private final Router router;
@@ -113,7 +115,8 @@ public class HomeScene implements Scene {
         if (loggedIn) {
             GToast.info(rootPanel, "联机功能：进 LobbyScene");
         } else {
-            GToast.info(rootPanel, "联机功能：弹 LoginDialog（4.6 实现）");
+            new LoginDialog(SwingUtilities.getWindowAncestor(root()),
+                comm -> router.push(new LobbyScene(router, comm))).setVisible(true);
         }
     }
 
