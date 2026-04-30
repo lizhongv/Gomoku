@@ -27,6 +27,9 @@ public class ChatPanel extends JPanel implements ThemeAware {
     private final StyledDocument doc;
     private final SimpleDateFormat fmt = new SimpleDateFormat("HH:mm:ss");
     private final javax.swing.JLabel header;
+    private final javax.swing.JTextField input;
+    private final javax.swing.JButton sendBtn;
+    private java.util.function.Consumer<String> sendHandler;
 
     public ChatPanel() {
         super(new BorderLayout());
@@ -52,9 +55,45 @@ public class ChatPanel extends JPanel implements ThemeAware {
         sp.getViewport().setOpaque(false);
         sp.setBorder(BorderFactory.createEmptyBorder());
 
+        input = new javax.swing.JTextField();
+        input.setFont(t.fontBody);
+        input.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(t.borderLight),
+                BorderFactory.createEmptyBorder(t.space2, t.space3, t.space2, t.space3)));
+        sendBtn = new javax.swing.JButton("发送");
+        sendBtn.setFont(t.fontBody);
+        java.awt.event.ActionListener doSend = e -> {
+            String text = input.getText().trim();
+            if (text.isEmpty() || sendHandler == null) return;
+            sendHandler.accept(text);
+            input.setText("");
+        };
+        input.addActionListener(doSend);
+        sendBtn.addActionListener(doSend);
+        JPanel inputRow = new JPanel(new BorderLayout(t.space2, 0));
+        inputRow.setOpaque(false);
+        inputRow.setBorder(BorderFactory.createEmptyBorder(t.space2, t.space3, 0, t.space3));
+        inputRow.add(input, BorderLayout.CENTER);
+        inputRow.add(sendBtn, BorderLayout.EAST);
+        inputRow.setVisible(false);
+
         setBorder(BorderFactory.createEmptyBorder(t.space2, t.space2, t.space2, t.space2));
         add(header, BorderLayout.NORTH);
         add(sp, BorderLayout.CENTER);
+        add(inputRow, BorderLayout.SOUTH);
+        this.inputRow = inputRow;
+    }
+
+    private final JPanel inputRow;
+
+    public void onSend(java.util.function.Consumer<String> handler) {
+        this.sendHandler = handler;
+        inputRow.setVisible(handler != null);
+        revalidate();
+    }
+
+    public boolean isEmpty() {
+        return doc.getLength() == 0;
     }
 
     public void setHeader(String text) {
