@@ -17,12 +17,21 @@ public class GTextField extends JTextField implements ThemeAware {
         super();
         setOpaque(false);
         applyStyle();
+        installFocusRepaint();
     }
 
     public GTextField(int columns) {
         super(columns);
         setOpaque(false);
         applyStyle();
+        installFocusRepaint();
+    }
+
+    private void installFocusRepaint() {
+        addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusGained(java.awt.event.FocusEvent e) { repaint(); }
+            @Override public void focusLost(java.awt.event.FocusEvent e) { repaint(); }
+        });
     }
 
     public void setPlaceholder(String p) {

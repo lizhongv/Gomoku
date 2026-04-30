@@ -16,6 +16,7 @@ public class GDialog extends JDialog {
 
     public GDialog(Window owner, String title, boolean modal) {
         super(owner, title, modal ? ModalityType.APPLICATION_MODAL : ModalityType.MODELESS);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         Tokens t = Theme.tokens();
         content = new JPanel(new BorderLayout());
         content.setBackground(t.bgPrimary);

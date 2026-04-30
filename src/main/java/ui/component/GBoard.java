@@ -83,6 +83,10 @@ public class GBoard extends JComponent implements ThemeAware {
     public void onClick(BiConsumer<Integer, Integer> handler) { this.clickHandler = handler; }
 
     public void placeChess(int col, int row, boolean isBlack) {
+        if (col < 0 || col >= N || row < 0 || row >= N) return;
+        for (Stone s : stones) {
+            if (s.col == col && s.row == row) return;
+        }
         Stone s = new Stone(col, row, isBlack);
         stones.add(s);
         lastMove = s;
