@@ -20,6 +20,7 @@ public class Command {
 	public static final String LOGIN = "login";
 	public static final String GAME = "game";
 	public static final String MANUAL = "manual";
+	public static final String UPLOAD_MANUAL = "uploadManual";
 
 	public static final String TALK = "talk";
 

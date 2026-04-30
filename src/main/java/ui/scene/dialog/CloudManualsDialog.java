@@ -27,7 +27,7 @@ public class CloudManualsDialog extends GDialog {
     private final SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
 
     public CloudManualsDialog(java.awt.Window owner, Consumer<Game> onSelect) {
-        super(owner, "云端棋谱", true);
+        super(owner, "我的棋谱", true);
         this.onSelect = onSelect;
         Tokens t = Theme.tokens();
 
@@ -38,7 +38,7 @@ public class CloudManualsDialog extends GDialog {
         sp.setPreferredSize(new Dimension(420, 280));
         sp.setBorder(BorderFactory.createLineBorder(t.borderLight));
 
-        JLabel hint = new JLabel("<html>云端棋谱 · 服务器存的所有联机对战记录（含其他玩家做对手的对局）<br><i>加载中...</i></html>");
+        JLabel hint = new JLabel("<html>我的棋谱 · 服务器集中保存（AI 与联机对战均自动上传）<br><i>加载中...</i></html>");
         hint.setFont(t.fontCaption);
         hint.setForeground(t.fgMuted);
         hint.setBorder(BorderFactory.createEmptyBorder(0, 0, t.space2, 0));

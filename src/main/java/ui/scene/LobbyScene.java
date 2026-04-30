@@ -30,7 +30,6 @@ import net.OnlineGameSession;
 import profile.Profile;
 import ui.scene.dialog.CloudManualsDialog;
 import ui.Theme;
-import ui.component.BrandHeader;
 import ui.component.ChatPanel;
 import ui.component.GAvatar;
 import ui.component.GButton;
@@ -81,18 +80,11 @@ public class LobbyScene implements Scene, GameClient {
 
     private JPanel buildNorth() {
         Tokens t = Theme.tokens();
-        JPanel north = new JPanel(new BorderLayout(0, t.space2));
-        north.setOpaque(false);
-
-        BrandHeader header = new BrandHeader();
-        header.setCurrentUser(Profile.get().nickname, null);
-        north.add(header, BorderLayout.NORTH);
-
         JPanel profileRow = new JPanel(new BorderLayout(t.space2, 0));
         profileRow.setOpaque(false);
-        profileRow.setBorder(BorderFactory.createEmptyBorder(t.space1, t.space5, 0, t.space5));
+        profileRow.setBorder(BorderFactory.createEmptyBorder(t.space2, t.space5, t.space2, t.space5));
 
-        profileAvatar = new GAvatar(36, false);
+        profileAvatar = new GAvatar(32, false);
         profileAvatar.setImagePath(Profile.get().avatarPath);
         profileRow.add(profileAvatar, BorderLayout.WEST);
 
@@ -117,16 +109,7 @@ public class LobbyScene implements Scene, GameClient {
         east.add(change);
         profileRow.add(east, BorderLayout.EAST);
 
-        GCard profileCard = new GCard(false);
-        profileCard.setLayout(new BorderLayout());
-        profileCard.add(profileRow, BorderLayout.CENTER);
-
-        JPanel padded = new JPanel(new BorderLayout());
-        padded.setOpaque(false);
-        padded.setBorder(BorderFactory.createEmptyBorder(0, t.space5, 0, t.space5));
-        padded.add(profileCard, BorderLayout.CENTER);
-        north.add(padded, BorderLayout.CENTER);
-        return north;
+        return profileRow;
     }
 
     private String buildProfileText() {
@@ -163,16 +146,13 @@ public class LobbyScene implements Scene, GameClient {
         GCard card = new GCard(true);
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
-        String[] labels = {"邀请选中", "人机对战", "云端棋谱", "本地棋谱", "退出登录"};
+        String[] labels = {"邀请选中", "人机对战", "我的棋谱", "退出登录"};
         for (int i = 0; i < labels.length; i++) {
             String label = labels[i];
             GButton b = (i == 0) ? GButton.primary(label) : GButton.secondary(label);
             b.setAlignmentX(Component.CENTER_ALIGNMENT);
             b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
             switch (label) {
-                case "本地棋谱":
-                    b.addActionListener(e -> router.push(new LocalManualScene(router)));
-                    break;
                 case "邀请选中":
                     b.addActionListener(e -> inviteSelected());
                     break;
@@ -182,7 +162,7 @@ public class LobbyScene implements Scene, GameClient {
                 case "人机对战":
                     b.addActionListener(e -> startAiGame());
                     break;
-                case "云端棋谱":
+                case "我的棋谱":
                     b.addActionListener(e -> openCloudManuals());
                     break;
             }
@@ -369,7 +349,12 @@ public class LobbyScene implements Scene, GameClient {
     // ====== GameClient 回调（在 ReceiveThread 触发，全部 invokeLater 到 EDT） ======
 
     @Override public void onLoggedIn(String myName) {
-        runOnEdt(() -> statusBar.setOnline("已连接 - " + myName));
+        runOnEdt(() -> {
+            statusBar.setOnline("已连接 - " + myName);
+            // 服务端只广播 "其他玩家" 给新登录者，不会把自己回发给自己
+            // 把自己也加入玩家列表，避免单人在线时列表全空
+            replaceUserListItem(myName, Profile.get().levelTitle());
+        });
     }
 
     @Override public void onUserList(String name, String state) {

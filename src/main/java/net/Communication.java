@@ -17,6 +17,10 @@ import protocol.SafeObjectInputStream;
 import server.FiveServer;
 
 public class Communication {
+	private static volatile Communication current;
+	/** 客户端进程内唯一的 Communication 实例（最近一次成功登录的连接）。 */
+	public static Communication current() { return current; }
+
 	private GameClient client;
 	Socket s;
 	private DataInputStream dis;
@@ -137,6 +141,7 @@ public class Communication {
 			Message reply = Message.read(dis);
 			if (Command.LOGIN.equals(reply.command()) && "true".equals(reply.argOr(0, ""))) {
 				connected = true;
+				current = this;
 				new ReceiveThread().start();
 				return "ok";
 			} else if ("hasLogin".equals(reply.argOr(0, ""))) {
@@ -159,6 +164,8 @@ public class Communication {
 			} catch (IOException ignored) {
 			}
 		}
+		connected = false;
+		if (current == this) current = null;
 	}
 
 	public void agree(String name) {
@@ -229,6 +236,19 @@ public class Communication {
 	public void getManual(String fileName) {
 		try {
 			Message.send(dos, Command.MANUAL, fileName);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/** 把本地生成的 Manual（AI 或联机）上传到服务器集中存储。 */
+	public void uploadManual(Manual manual) {
+		if (manual == null) return;
+		try {
+			Message.send(dos, Command.UPLOAD_MANUAL);
+			java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(s.getOutputStream());
+			oos.writeObject(manual);
+			oos.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

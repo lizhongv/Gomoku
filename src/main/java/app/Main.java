@@ -70,13 +70,10 @@ public class Main {
         mShop.addActionListener(e -> router.push(new ui.scene.ShopScene(router)));
         javax.swing.JMenuItem mSettings = new javax.swing.JMenuItem("设置");
         mSettings.addActionListener(e -> router.push(new ui.scene.SettingsScene(router)));
-        javax.swing.JMenuItem mLocal = new javax.swing.JMenuItem("本地棋谱");
-        mLocal.addActionListener(e -> router.push(new ui.scene.LocalManualScene(router)));
         viewMenu.add(mHome);
         viewMenu.addSeparator();
         viewMenu.add(mShop);
         viewMenu.add(mSettings);
-        viewMenu.add(mLocal);
 
         javax.swing.JMenu helpMenu = new javax.swing.JMenu("帮助");
         javax.swing.JMenuItem mRules = new javax.swing.JMenuItem("游戏规则");

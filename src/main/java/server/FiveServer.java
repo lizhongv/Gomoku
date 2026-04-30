@@ -224,6 +224,22 @@ public class FiveServer extends Frame implements ActionListener {
 					oos.writeObject(manual);
 					oos.flush();
 				}
+			} else if (Command.UPLOAD_MANUAL.equals(cmd)) {
+				ObjectInputStream ois = new SafeObjectInputStream(c.s.getInputStream(),
+						"game.Manual");
+				try {
+					Manual uploaded = (Manual) ois.readObject();
+					if (uploaded != null) {
+						new ManualDao().addManual(uploaded);
+						new GameDao().addGame(new Game(
+								uploaded.getbUser(), uploaded.getwUer(),
+								new Date(System.currentTimeMillis()),
+								uploaded.getWinner()));
+						taMessage.append(c.name + " upload manual: " + uploaded.getFileName() + "\n");
+					}
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				}
 			}
 			return true;
 		}

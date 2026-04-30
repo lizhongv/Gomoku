@@ -14,7 +14,6 @@ import javax.swing.SwingUtilities;
 import feature.emote.Emote;
 import feature.emote.EmoteParser;
 import game.Manual;
-import game.ManualDao;
 import net.GameSession;
 import profile.Profile;
 import ui.EventBus;
@@ -104,21 +103,6 @@ public class GameScene implements Scene {
         side.add(chipWrap);
         side.add(Box.createVerticalStrut(t.space3));
 
-        GButton chatBtn = GButton.secondary("发送消息");
-        chatBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        chatBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-        chatBtn.addActionListener(e -> {
-            String text = JOptionPane.showInputDialog(rootPanel, "请输入消息：");
-            if (text != null && !text.trim().isEmpty()) {
-                String trimmed = text.trim();
-                session.sendChat(trimmed);
-                chat.appendChat(Profile.get().nickname, trimmed, true);
-                GToast.info(rootPanel, "消息已发送");
-            }
-        });
-        side.add(chatBtn);
-        side.add(Box.createVerticalStrut(t.space2));
-
         GButton emojiBtn = GButton.secondary("表情");
         emojiBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         emojiBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
@@ -178,6 +162,12 @@ public class GameScene implements Scene {
             : "对局聊天 · 与对手私聊");
         chat.setMinimumSize(new Dimension(0, 80));
         chat.setPreferredSize(new Dimension(10, 130));
+        if (!(session instanceof net.AiGameSession)) {
+            chat.onSend(text -> {
+                session.sendChat(text);
+                chat.appendChat(Profile.get().nickname, text, true);
+            });
+        }
 
         rootPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override public void componentResized(java.awt.event.ComponentEvent e) {
@@ -385,8 +375,19 @@ public class GameScene implements Scene {
     private void handleResult(boolean youWon, String title, String msg) {
         Manual manual = session.buildManual();
         completedManual = manual;
-        if (manual != null) {
-            try { new ManualDao().addManual(manual); } catch (Exception ignored) {}
+        // AI 对战：客户端主动上传到云端；联机对战：服务端已在结算时自动保存
+        if (manual != null && (session instanceof net.AiGameSession)) {
+            net.Communication c = net.Communication.current();
+            if (c != null && c.isConnected()) {
+                String myLogin = c.getMyName();
+                String myNick = Profile.get().nickname;
+                if (myLogin != null && !myLogin.equals(myNick)) {
+                    if (myNick.equals(manual.getbUser())) manual.setbUser(myLogin);
+                    if (myNick.equals(manual.getwUer())) manual.setwUser(myLogin);
+                    if (myNick.equals(manual.getWinner())) manual.setWinner(myLogin);
+                }
+                try { c.uploadManual(manual); } catch (Exception ignored) {}
+            }
         }
         GameStartEvent.Mode mode = (session instanceof net.AiGameSession)
                 ? GameStartEvent.Mode.AI : GameStartEvent.Mode.ONLINE;
