@@ -196,3 +196,79 @@ EDT
 - 没有重连机制；ClientThread 一旦读出异常就结束，对手已结算判胜，但当前用户必须重启客户端再登录。
 - AI 模块仅做单机；下出的对局不会写入联机 `game` 表 / `manuals/`。要复用棋谱体系需要把 `AiBoard.chessList` 转换成 `game.Manual` 再走 `ManualDao.addManual`。
 - AI 启发式仅识别 6 种棋型（连五/活四/冲四/活三/眠三/活二），对"双活三"、"VCF/VCT"等组合威胁的识别要靠 Alpha-Beta 搜索深度间接判断，深度 3 时偶尔会被组合杀漏防。
+
+---
+
+## 阶段一重塑后架构（2026-04-30）
+
+阶段一对 **客户端** 做了完整重写，服务端协议、数据库 schema 全部保持向下兼容。本节描述新增结构与机制，旧 `client/` 包、`ai.AiGame/AiBoard/AiChess` 已全部删除。
+
+### 包结构
+
+```
+app/                              客户端启动入口（替换旧 client.FiveClient.main）
+  └─ Main                         FlatLaf 初始化 + Profile 加载 + SkinManager 初始化 + Router 启动
+ui/                               重塑后的视图层
+  ├─ component/                   原子组件
+  │   ├─ GButton  GCard  GChip  GAvatar  GBadge
+  │   ├─ GToast   GDialog  GTextField  GSlider  GTab
+  │   └─ GBoard                   棋盘组件（动态尺寸 + 悬停预览 + 呼吸光环 + 木纹背景）
+  ├─ design/                      设计 token
+  │   ├─ Theme    Tokens          颜色 / 间距 / 圆角 / 字号 / 阴影
+  │   ├─ Fonts                    字体选择器
+  │   ├─ BoardStyle  PieceStyle   棋盘 / 棋子绘制规则
+  │   └─ Skin                     皮肤数据类
+  ├─ scene/                       一屏即一 Scene
+  │   ├─ HomeScene  LobbyScene  GameScene  ReviewScene  ShopScene  SettingsScene
+  │   ├─ Router                   CardLayout 历史栈，onEnter/onLeave 生命周期
+  │   ├─ BrandHeader  StatusBar   全局组件
+  │   ├─ ChatPanel  PlayerCard  EmoteBar  ResultCard  ScoreChart
+  │   └─ dialog/                  LoginDialog  PurchaseDialog  AboutDialog  OnboardingDialog
+  └─ EventBus                     进程内发布订阅（6 种事件）
+feature/                          七大产品模块（每个模块自包含）
+  ├─ skin/                        SkinManager + 4 套皮肤（Classic/DarkWood/Jade/Neon）
+  ├─ sound/                       SoundManager + 6 SoundId（程序化生成正弦波 WAV）
+  ├─ review/                      ReviewEngine + ReviewMove + ReviewReport
+  ├─ rank/                        RankCalculator + Tier（青铜→大师 6 段位）
+  ├─ emote/                       Emote + EmotePack + EmoteParser（[emote:good] 标记）
+  ├─ share/                       GifExporter（基于 animated-gif-lib）
+  └─ shop/                        CoinManager + CoinEarnSubscriber
+net/                              网络抽象
+  ├─ GameSession                  对局会话接口（落子 / 认输 / 聊天 / 取报告）
+  ├─ OnlineGameSession            包 Communication，对接现有 protocol
+  ├─ AiGameSession                包本地 AI（Evaluate）
+  └─ Communication                旧 client.Communication 迁移过来，行为不变
+profile/                          本地玩家档案（Properties 持久化到 ~/.gomoku/profile.properties）
+  └─ Profile                      ELO / peakElo / coins / skinId / unlockedSkins / 签到日历
+config/                           AppConfig 全局配置
+ai/                               仅保留 Evaluate（被 AiGameSession 调用）
+protocol/  server/  game/  user/  tool/    旧模块，未动
+```
+
+### 新核心机制
+
+| 机制 | 实现要点 |
+|---|---|
+| **Theme + Tokens** | DesignTokens 模式。所有组件读 `Theme.tokens()` 取色 / 圆角 / 阴影；皮肤切换只刷新 token 表 + 触发 SkinChangedEvent，组件统一 ThemeAware 重绘。**不允许硬编码颜色**。 |
+| **EventBus** | 进程内发布订阅，6 种事件：`SkinChangedEvent` / `GameStartEvent` / `GameEndEvent` / `MoveEvent` / `RankUpEvent` / `CoinsChangedEvent`。订阅在线程安全的 `CopyOnWriteArrayList<Listener>` 中维护。 |
+| **Scene + Router** | CardLayout 加历史栈，`Scene` 接口含 `onEnter()` / `onLeave()` 生命周期。Router 单例管理切换 + back / replace 语义。 |
+| **GameSession 抽象** | `OnlineGameSession` 与 `AiGameSession` 实现同一接口，GameScene 只依赖接口，落子 / 认输 / 聊天 / 复盘报告四种调用对两种模式语义一致。 |
+| **SkinManager** | 4 套内置皮肤（Classic 默认免费 + DarkWood/Jade/Neon 付费占位），运行时切换写 Profile 持久化，发 SkinChangedEvent。`unlock(skinId)` 加入 unlockedSkins 集合。 |
+| **ReviewEngine** | 复盘算法。复用 `ai.Evaluate.snapshotScore` 拿每步前后局面分，阈值打分 → 6 等级 BRILLIANT / GOOD / OK / INACCURACY / MISTAKE / BLUNDER。输出 `ReviewReport(moves[], summary)`。 |
+
+### 删除清单
+
+阶段一重塑作废以下旧模块（commit `b767298`）：
+
+- 旧客户端：`client.FiveClient` / `client.PanelBoard` / `client.Chess` / `client.Frame` / `client.PanelTiming` / `client.PanelControl` / `client.PanelMessage` / `client.PanelUserList` + 全部 `client.Dialog*`
+- 旧 AI 入口：`ai.AiBoard` / `ai.AiChess` / `ai.AiGame`（只保留 `ai.Evaluate` 给 `AiGameSession` 调）
+
+新启动入口为 `app.Main`，所有打包脚本（`scripts/package.sh` / `scripts/package-installer.sh` / `scripts/run-client.{bat,sh}` / `scripts/run-ai.{bat,sh}`）均已切换。
+
+### 测试覆盖
+
+- **单元测试** 32 断言（`ProfileTest` 12 / `EventBusTest` 3 / `SkinManagerTest` 5 / `ReviewEngineTest` 2 / `RankCalculatorTest` 5 / `EmoteParserTest` 4 / `GifExporterTest` 1）
+- **联机 E2E** 36 断言（`E2eTest` 28 + `E2eTest2` 8，向下兼容）
+- 合计 **68 断言** 全过
+
+

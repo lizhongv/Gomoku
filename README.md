@@ -3,7 +3,21 @@
 基于 Java AWT/Swing + Socket + MySQL 的五子棋。两种玩法：
 
 - **联机对战**：服务端监听 `4801` 端口，多个客户端同时登录、邀请、对局、聊天、回放历史棋谱。
-- **人机对战**：内置 Alpha-Beta 剪枝 AI（深度 3 + 启发式估值），单机即玩，可从联机客户端的"人机对战"按钮启动，也可独立运行。
+- **人机对战**：内置 Alpha-Beta 剪枝 AI（深度 3 + 启发式估值），单机即玩，可从客户端首页"人机对战"按钮启动。
+
+---
+
+## 产品功能（v1.0 阶段一）
+
+阶段一重塑后客户端从工程 demo 升级为产品级体验，七大模块均已交付：
+
+1. **现代化 UI**：FlatLaf + 自研 Theme/Tokens/Scene 体系，4 套皮肤主题（Classic 经典木纹 / DarkWood 暗夜 / Jade 玉石 / Neon 霓虹）运行时切换；HomeScene/LobbyScene/GameScene/ReviewScene/ShopScene/SettingsScene 全新视觉。
+2. **联机 / 人机对战**：统一 GameSession 抽象（OnlineGameSession + AiGameSession），同一 GameScene 适配两种模式。
+3. **AI 复盘**：每局结束自动生成 ReviewReport，评分曲线 + BRILLIANT / GOOD / OK / INACCURACY / MISTAKE / BLUNDER 六级失误标注。
+4. **段位系统**：本地 ELO（青铜→白银→黄金→铂金→钻石→大师 6 段位）；联机用 ELO 系数，人机分难度分 0~15 分。
+5. **聊天表情**：8 个快捷短语，对端在 ChatPanel 渲染为 GChip 而非纯文本。
+6. **棋谱 GIF 导出**：基于 animated-gif-lib 输出 30 手 < 10 秒（CC0 共享）。
+7. **商店 + 金币 + 每日签到**：联机胜利 +10 / AI 胜利 +5 / 每日签到奖励，购买皮肤扣金币 + 即时切换。
 
 ---
 
@@ -21,12 +35,11 @@
 - 可选 TLS（按 JSSE 标准 keystore 配置）
 
 **单机 AI 部分**
-- 15×15 棋盘，可选先手 / 执棋颜色
+- 15×15 棋盘，HomeScene 进入时弹难度对话框（简单 / 中等 / 困难）
 - 启发式估值：连五 / 活四 / 冲四 / 活三 / 眠三 / 活二 + 中心位置加权
 - Alpha-Beta 剪枝深度 3，每层取分数前 10 个候选位
-- 搜索在 `SwingWorker` 后台线程跑，UI 不卡顿
-- 棋盘快照 + 代次失效，"开始" / "退出" 中途打断不会出现野手
-- 悔棋（一次回退一对人/机手）
+- 搜索在后台线程跑，UI 不卡顿；带 1-3 秒思考延时模拟"在想"
+- AI 局结束同样写入 ReviewReport，可在 ReviewScene 复盘 / 导出 GIF
 
 ---
 
@@ -57,16 +70,32 @@ Gomoku/
 │   └── mysql-connector-j-8.4.0.jar
 └── src/
     ├── main/java/
-    │   ├── client/               # 联机客户端入口 + GUI（Panel*, Dialog*, Communication）
+    │   ├── app/                  # 客户端启动入口（Main：FlatLaf + Profile + SkinManager 初始化 → Router）
+    │   ├── ui/                   # 重塑后的视图层
+    │   │   ├── component/        # GButton / GCard / GChip / GAvatar / GToast / GBoard / GDialog / ...
+    │   │   ├── design/           # Theme + Tokens + Fonts + BoardStyle + PieceStyle
+    │   │   └── scene/            # HomeScene / LobbyScene / GameScene / ReviewScene / ShopScene / SettingsScene + Router
+    │   ├── feature/              # 七大产品模块
+    │   │   ├── skin/             # SkinManager + 4 套皮肤
+    │   │   ├── sound/            # SoundManager + 6 音效（程序化 WAV）
+    │   │   ├── review/           # ReviewEngine 复盘
+    │   │   ├── rank/             # RankCalculator + Tier
+    │   │   ├── emote/            # EmoteParser + EmotePack
+    │   │   ├── share/            # GifExporter
+    │   │   └── shop/             # CoinManager + CoinEarnSubscriber
+    │   ├── net/                  # GameSession 抽象 + Communication（OnlineGameSession + AiGameSession）
     │   ├── server/               # FiveServer
     │   ├── protocol/             # 共享协议（Command, Message, Net, SafeObjectInputStream）
     │   ├── game/                 # 棋局 / 棋谱实体与 DAO
     │   ├── user/                 # User、UserDao、PasswordHash、DBConnection
-    │   ├── ai/                   # 单机人机对战（AiGame, AiBoard, AiChess, Evaluate）
+    │   ├── profile/              # 本地玩家档案 Profile（ELO / 段位 / 皮肤 / 金币 / 签到）
+    │   ├── config/               # AppConfig 全局配置
+    │   ├── ai/                   # AI 估值（Evaluate）— 旧 AiGame/AiBoard/AiChess 已删，被 AiGameSession 替代
     │   └── tool/                 # CreateDatabase（建库工具）
     └── test/java/
-        ├── E2eTest.java          # 端到端主流程
-        └── E2eTest2.java         # 边界测试（GIVEUP / TALK 特殊字符）
+        ├── E2eTest.java          # 端到端主流程（28 断言）
+        ├── E2eTest2.java         # 边界测试（GIVEUP / TALK 特殊字符，8 断言）
+        └── feature/.../*Test.java  # 单元测试（32 断言：Profile / EventBus / Skin / Review / Rank / Emote / Gif）
 ```
 
 ---
@@ -78,6 +107,8 @@ Gomoku/
 | JDK | 17+（实测 17） | AWT/Swing 即用，无外部 GUI 依赖 |
 | MySQL | 5.7 / 8.x | 已用 8.0.45 验证 |
 | MySQL Connector/J | 8.4.0 | 已随仓库 `lib/` 提供 |
+| FlatLaf | 3.4.1 | 现代化 LookAndFeel，已随仓库 `lib/` 提供 |
+| animated-gif-lib | 1.4 | 棋谱 GIF 导出，已随仓库 `lib/` 提供 |
 | Maven（可选） | 3.6+ | 用 `pom.xml` 时需要；不用 Maven 可直接 `javac` |
 | 操作系统 | Windows / Linux / macOS | 任何带 GUI 的环境 |
 
@@ -148,28 +179,14 @@ scripts\run-client.bat   # Windows
 
 ### 3b. 单机人机对战
 
-两条路任选其一：
-
-**A. 从联机客户端进入**：在客户端窗口下方点 **"人机对战"** 按钮，会弹出独立的 AI 窗口。关掉它不影响联机会话，无需先登录。
-
-**B. 直接启动**：
+启动客户端（同 3a）后，在 HomeScene 点 **"人机对战"** 按钮，会弹出难度选择对话框，确认后进入 GameScene 与本地 AI 对局。无需先登录、无需服务器。
 
 ```bash
-scripts\run-ai.bat   # Windows
+scripts\run-ai.bat   # Windows  (= 启动 app.Main，人机对战是首页里的一种模式)
 ./scripts/run-ai.sh  # Linux / macOS
 ```
 
-AI 窗口操作：
-
-| 按钮 | 作用 |
-|---|---|
-| 开始 | 按当前 "先手" / "白棋" 复选框新开一局 |
-| 悔棋 | 撤回一对人/机手（仅在"轮到人"时可点） |
-| 放弃 | 当前局认输（计算机赢） |
-| 退出 | 关闭 AI 窗口 |
-| 关于 | 查看当前局状态 |
-| ☐ 先手 | 勾选 = 人先手；不勾 = 计算机先手（默认） |
-| ☐ 白棋 | 勾选 = 先手方执白；不勾 = 先手方执黑（默认） |
+> 阶段一重塑后，独立的 `ai.AiGame` 窗口已被删除，统一为 GameScene + AiGameSession 组合。原来的 "先手 / 白棋" 复选框迁移为难度选择对话框。
 
 ### 4. 跑端到端测试（仅联机功能，可选）
 
@@ -180,7 +197,9 @@ scripts\run-tests.bat   # Windows
 ./scripts/run-tests.sh  # Linux / macOS
 ```
 
-期望输出 `passed=28 failed=0` 和 `passed=8 failed=0`（合计 36 个断言）。
+期望输出 `passed=28 failed=0` 和 `passed=8 failed=0`（联机 E2E 合计 36 个断言）。
+
+加上 `scripts/run-unit-tests.{bat,sh}` 的 32 个单元断言（Profile / EventBus / Skin / Review / Rank / Emote / Gif），全套 **68 断言**。
 
 ---
 
@@ -226,7 +245,7 @@ java -Dfive.tls=true \
 # 启动客户端
 java -Dfive.tls=true \
      -Djavax.net.ssl.trustStore=client.jks -Djavax.net.ssl.trustStorePassword=changeit \
-     -cp "target/classes;lib/*" client.FiveClient
+     -cp "target/classes;lib/*" app.Main
 ```
 
 ---
