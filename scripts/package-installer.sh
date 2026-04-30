@@ -48,7 +48,6 @@ build_app() {
         --app-version 1.0.0 \
         --vendor "Gomoku Project" \
         --dest target/installer \
-        --java-options "-Dfile.encoding=UTF-8" \
         "${extra[@]}"
 
     rm -rf "$input_dir"
