@@ -114,6 +114,9 @@ public class E2eTest2 {
 	}
 
 	static boolean dbHasGame(String winner) {
+		if (user.StorageMode.useFiles()) {
+			return game.FileGameStore.countWins(winner) >= 1;
+		}
 		try (java.sql.Connection c = java.sql.DriverManager.getConnection(
 				user.DBConnection.getUrl(), user.DBConnection.getUser(), user.DBConnection.getPassword());
 				java.sql.PreparedStatement p = c.prepareStatement("select count(*) from game where winner = ?")) {
@@ -126,6 +129,13 @@ public class E2eTest2 {
 	}
 
 	static void cleanup(String... users) {
+		if (user.StorageMode.useFiles()) {
+			for (String u : users) {
+				user.FileUserStore.removeUser(u);
+				game.FileGameStore.removeAllForUser(u);
+			}
+			return;
+		}
 		try (java.sql.Connection c = java.sql.DriverManager.getConnection(
 				user.DBConnection.getUrl(), user.DBConnection.getUser(), user.DBConnection.getPassword())) {
 			for (String u : users) {
