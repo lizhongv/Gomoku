@@ -13,9 +13,15 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import feature.emote.Emote;
 import feature.emote.EmoteParser;
+import game.Manual;
+import game.ManualDao;
 import net.GameSession;
 import profile.Profile;
+import ui.EventBus;
 import ui.Theme;
+import ui.events.GameEndEvent;
+import ui.events.GameStartEvent;
+import ui.events.MoveEvent;
 import ui.component.BrandHeader;
 import ui.component.ChatPanel;
 import ui.component.EmoteBar;
@@ -40,6 +46,8 @@ public class GameScene implements Scene {
     private boolean iAmBlack;
     private boolean colorKnown;
     private boolean ended;
+    @SuppressWarnings("unused")
+    private Manual completedManual;
 
     public GameScene(Router router, GameSession session) {
         this.router = router;
@@ -63,6 +71,7 @@ public class GameScene implements Scene {
             board.placeChess(c, r, iAmBlack);
             board.setInteractive(false);
             turnChip.setText("对手回合");
+            EventBus.publish(new MoveEvent(c, r, true));
         });
         JPanel boardWrap = new JPanel(new BorderLayout());
         boardWrap.setOpaque(false);
@@ -209,33 +218,28 @@ public class GameScene implements Scene {
                 turnChip.setText("对手回合");
                 meCard.setActive(false);
                 opCard.setActive(true);
+                EventBus.publish(new MoveEvent(ev.col, ev.row, false));
                 break;
             case RESULT_WIN:
                 ended = true;
                 board.setInteractive(false);
                 turnChip.setText("您赢了");
-                Profile p = Profile.get();
-                if (session instanceof net.AiGameSession) p.aiWins++; else p.onlineWins++;
-                p.save();
                 GToast.success(rootPanel, "您赢了！");
-                showResultDialog("胜利", "恭喜您赢了！");
+                handleResult(true, "胜利", "恭喜您赢了！");
                 break;
             case RESULT_LOSE:
                 ended = true;
                 board.setInteractive(false);
                 turnChip.setText("您输了");
-                Profile pl = Profile.get();
-                if (session instanceof net.AiGameSession) pl.aiLosses++; else pl.onlineLosses++;
-                pl.save();
                 GToast.error(rootPanel, "您输了");
-                showResultDialog("失败", "您输了，再接再厉。");
+                handleResult(false, "失败", "您输了，再接再厉。");
                 break;
             case OPP_LEFT:
                 ended = true;
                 board.setInteractive(false);
                 turnChip.setText("对手已离开");
                 GToast.error(rootPanel, "对手已离开");
-                showResultDialog("提示", "对手已离开。");
+                showResultWithReview("提示", "对手已离开。", null);
                 break;
             case CHAT:
                 chat.appendChat(ev.chatSender == null ? "对手" : ev.chatSender,
@@ -246,24 +250,59 @@ public class GameScene implements Scene {
         }
     }
 
-    private void showResultDialog(String title, String msg) {
-        GDialog d = new GDialog(null, title, true) {{
-            content.add(new javax.swing.JLabel(msg, javax.swing.SwingConstants.CENTER), BorderLayout.CENTER);
-            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER));
-            buttons.setOpaque(false);
-            GButton ok = GButton.primary("返回大厅");
-            ok.addActionListener(e -> dispose());
-            buttons.add(ok);
-            content.add(buttons, BorderLayout.SOUTH);
-            setSize(new Dimension(360, 180));
-            setLocationRelativeTo(rootPanel);
-        }};
+    private void handleResult(boolean youWon, String title, String msg) {
+        Manual manual = session.buildManual();
+        completedManual = manual;
+        if (manual != null) {
+            try { new ManualDao().addManual(manual); } catch (Exception ignored) {}
+        }
+        GameStartEvent.Mode mode = (session instanceof net.AiGameSession)
+                ? GameStartEvent.Mode.AI : GameStartEvent.Mode.ONLINE;
+        int aiElo = 0;
+        if (session instanceof net.AiGameSession) {
+            int d = ((net.AiGameSession) session).aiDepth();
+            aiElo = (d == 1) ? 800 : (d == 5 ? 1600 : 1200);
+        }
+        EventBus.publish(new GameEndEvent(youWon, manual, mode, aiElo));
+        showResultWithReview(title, msg, manual);
+    }
+
+    private void showResultWithReview(String title, String msg, Manual manual) {
+        final GDialog d = new GDialog(null, title, true);
+        d.getContentPane().setLayout(new BorderLayout());
+        javax.swing.JLabel lbl = new javax.swing.JLabel(msg, javax.swing.SwingConstants.CENTER);
+        lbl.setFont(Theme.tokens().fontBody);
+        lbl.setForeground(Theme.tokens().fgDefault);
+        d.getContentPane().add(lbl, BorderLayout.CENTER);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, Theme.tokens().space2, 0));
+        buttons.setOpaque(false);
+        if (manual != null) {
+            GButton review = GButton.primary("查看复盘");
+            review.addActionListener(e -> {
+                d.dispose();
+                router.replace(new ReviewScene(router, manual));
+            });
+            buttons.add(review);
+        }
+        GButton back = GButton.ghost("返回大厅");
+        back.addActionListener(e -> {
+            d.dispose();
+            router.pop();
+        });
+        buttons.add(back);
+        d.getContentPane().add(buttons, BorderLayout.SOUTH);
+        d.setSize(new Dimension(380, 200));
+        d.setLocationRelativeTo(rootPanel);
         d.setVisible(true);
-        router.pop();
     }
 
     @Override public JComponent root() { return rootPanel; }
     @Override public String title() { return "对局"; }
-    @Override public void onEnter() { session.start(); }
+    @Override public void onEnter() {
+        GameStartEvent.Mode mode = (session instanceof net.AiGameSession)
+                ? GameStartEvent.Mode.AI : GameStartEvent.Mode.ONLINE;
+        EventBus.publish(new GameStartEvent(mode, null, session.opponentName()));
+        session.start();
+    }
     @Override public void onLeave() { if (!ended) session.leave(); }
 }

@@ -1,6 +1,7 @@
 package net;
 
 import java.util.function.Consumer;
+import game.Manual;
 
 public interface GameSession {
     String myColor();
@@ -13,6 +14,7 @@ public interface GameSession {
     void claimWin();
     void leave();
     default void sendChat(String content) {}
+    default Manual buildManual() { return null; }
     void subscribe(Consumer<GameSessionEvent> handler);
 
     enum EventType { MY_TURN, OPP_MOVE, RESULT_WIN, RESULT_LOSE, OPP_LEFT, CHAT }

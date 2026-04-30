@@ -7,6 +7,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 import ai.Evaluate;
+import game.Manual;
 
 public class AiGameSession implements GameSession {
     private static final int N = 15;
@@ -18,11 +19,20 @@ public class AiGameSession implements GameSession {
     private boolean finished;
     private long pendingGen;
     private SwingWorker<int[], Void> currentWorker;
+    private final int aiDepth;
+    private final int aiSamples;
+    private final List<int[]> moves = new ArrayList<>();
+    private boolean lastWinnerWasMe;
 
     public AiGameSession(String myColor, int aiDepth, int aiSamples) {
         this.myColor = (myColor != null) ? myColor : "black";
         this.seconds = 300;
+        this.aiDepth = aiDepth;
+        this.aiSamples = aiSamples;
     }
+
+    public int aiDepth() { return aiDepth; }
+    public int aiSamples() { return aiSamples; }
 
     @Override public String myColor() { return myColor; }
     @Override public String opponentName() { return "AI"; }
@@ -45,13 +55,16 @@ public class AiGameSession implements GameSession {
         if (board[col][row] != 0) return;
         board[col][row] = myCode();
         chessCount++;
+        moves.add(new int[]{col, row});
         if (isWin(col, row, myCode())) {
             finished = true;
+            lastWinnerWasMe = true;
             emit(new GameSessionEvent(EventType.RESULT_WIN));
             return;
         }
         if (chessCount >= N * N) {
             finished = true;
+            lastWinnerWasMe = true;
             emit(new GameSessionEvent(EventType.RESULT_WIN));
             return;
         }
@@ -61,6 +74,7 @@ public class AiGameSession implements GameSession {
     @Override public void giveup() {
         if (finished) return;
         finished = true;
+        lastWinnerWasMe = false;
         emit(new GameSessionEvent(EventType.RESULT_LOSE));
     }
 
@@ -109,8 +123,10 @@ public class AiGameSession implements GameSession {
                     if (board[col][row] != 0) return;
                     board[col][row] = aiColor;
                     chessCount++;
+                    moves.add(new int[]{col, row});
                     if (isWin(col, row, aiColor)) {
                         finished = true;
+                        lastWinnerWasMe = false;
                         emit(new GameSessionEvent(EventType.OPP_MOVE, col, row, null, null));
                         emit(new GameSessionEvent(EventType.RESULT_LOSE));
                         return;
@@ -123,6 +139,20 @@ public class AiGameSession implements GameSession {
             }
         };
         currentWorker.execute();
+    }
+
+    @Override
+    public Manual buildManual() {
+        int[][] arr = new int[moves.size()][];
+        for (int i = 0; i < moves.size(); i++) arr[i] = moves.get(i);
+        String me = profile.Profile.get().nickname;
+        String black = "black".equals(myColor) ? me : "AI";
+        String white = "black".equals(myColor) ? "AI" : me;
+        String winner;
+        if (!finished) winner = "";
+        else winner = lastWinnerWasMe ? me : "AI";
+        return new Manual(black, white, new java.sql.Date(System.currentTimeMillis()),
+                          winner, arr.length, arr);
     }
 
     private boolean isWin(int col, int row, int color) {

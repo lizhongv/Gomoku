@@ -13,6 +13,9 @@ public class OnlineGameSession implements GameSession, GameClient {
     private String myColor;
     private String opponentName;
     private final int seconds;
+    private final List<int[]> moves = new ArrayList<>();
+    private boolean lastWinnerWasMe;
+    private boolean finished;
 
     public OnlineGameSession(Communication comm, String opponentName, int seconds) {
         this.comm = comm;
@@ -29,11 +32,29 @@ public class OnlineGameSession implements GameSession, GameClient {
         // 邀请已在 Lobby 阶段完成；此处仅等待 server 的 GUESSCOLOR 回调
     }
 
-    @Override public void makeMove(int col, int row) { comm.go(col, row); }
+    @Override public void makeMove(int col, int row) {
+        moves.add(new int[]{col, row});
+        comm.go(col, row);
+    }
     @Override public void giveup() { comm.giveup(); }
     @Override public void claimWin() { comm.wins(); }
     @Override public void leave() { comm.disConnect(); }
     @Override public void sendChat(String content) { if (content != null) comm.talk(content); }
+
+    @Override
+    public Manual buildManual() {
+        int[][] arr = new int[moves.size()][];
+        for (int i = 0; i < moves.size(); i++) arr[i] = moves.get(i);
+        String me = profile.Profile.get().nickname;
+        String opp = (opponentName == null || opponentName.isEmpty()) ? "对手" : opponentName;
+        String black = "black".equals(myColor) ? me : opp;
+        String white = "black".equals(myColor) ? opp : me;
+        String winner;
+        if (!finished) winner = "";
+        else winner = lastWinnerWasMe ? me : opp;
+        return new Manual(black, white, new java.sql.Date(System.currentTimeMillis()),
+                          winner, arr.length, arr);
+    }
 
     @Override public void subscribe(Consumer<GameSessionEvent> handler) {
         if (handler != null) handlers.add(handler);
@@ -67,11 +88,14 @@ public class OnlineGameSession implements GameSession, GameClient {
     }
 
     @Override public void onOpponentMove(int col, int row) {
+        moves.add(new int[]{col, row});
         emit(new GameSessionEvent(EventType.OPP_MOVE, col, row, null, null));
         emit(new GameSessionEvent(EventType.MY_TURN));
     }
 
     @Override public void onResult(boolean youWon) {
+        finished = true;
+        lastWinnerWasMe = youWon;
         emit(new GameSessionEvent(youWon ? EventType.RESULT_WIN : EventType.RESULT_LOSE));
     }
 
