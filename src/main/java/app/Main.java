@@ -24,6 +24,14 @@ public class Main {
         UIManager.put("defaultFont", new FontUIResource(uiFont));
         FlatLightLaf.setup();
         forceFontFamilyForAllFontKeys(uiFont);
+
+        // EDT 吞 RuntimeException 会让按钮看似"无反应" — 在 sun.awt.exception.handler 兜底打印
+        Thread.setDefaultUncaughtExceptionHandler((th, ex) -> {
+            System.err.println("[UNCAUGHT] thread=" + th.getName());
+            ex.printStackTrace();
+        });
+        System.setProperty("sun.awt.exception.handler", "app.Main$EdtCrashHandler");
+
         Profile.get();
         SkinManager.init();
         SoundManager.preload();
@@ -107,6 +115,15 @@ public class Main {
         javax.swing.JOptionPane.showMessageDialog(owner,
                 new javax.swing.JScrollPane(pane), "五子棋规则",
                 javax.swing.JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /** 旧 sun.awt.exception.handler 协议要求 public 类有 public 无参构造 + handle(Throwable) 方法。 */
+    public static class EdtCrashHandler {
+        public EdtCrashHandler() {}
+        public void handle(Throwable ex) {
+            System.err.println("[EDT-UNCAUGHT]");
+            ex.printStackTrace();
+        }
     }
 
     private static void forceFontFamilyForAllFontKeys(Font uiFont) {

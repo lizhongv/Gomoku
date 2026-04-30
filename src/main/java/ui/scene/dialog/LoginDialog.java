@@ -137,9 +137,22 @@ public class LoginDialog extends GDialog {
                             "• 防火墙允许 TCP 端口 4801");
                     break;
             }
-        } catch (Exception ex) {
-            showError("登录异常", ex.getClass().getSimpleName() + ": " + ex.getMessage());
+        } catch (Throwable ex) {
+            ex.printStackTrace();
+            String stack = stackTopFrames(ex, 5);
+            showError("登录异常",
+                    ex.getClass().getName() + "\n"
+                    + (ex.getMessage() == null ? "(无消息)" : ex.getMessage()) + "\n\n"
+                    + "调用栈（前 5 帧）：\n" + stack);
         }
+    }
+
+    private static String stackTopFrames(Throwable ex, int n) {
+        StackTraceElement[] frames = ex.getStackTrace();
+        StringBuilder sb = new StringBuilder();
+        int limit = Math.min(n, frames.length);
+        for (int i = 0; i < limit; i++) sb.append("  at ").append(frames[i]).append('\n');
+        return sb.toString();
     }
 
     private void showError(String title, String message) {
