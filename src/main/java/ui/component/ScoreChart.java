@@ -18,7 +18,7 @@ public class ScoreChart extends JComponent implements ThemeAware {
     private String progressText;
 
     public ScoreChart() {
-        setPreferredSize(new Dimension(280, 180));
+        setPreferredSize(new Dimension(280, 200));
         setOpaque(false);
     }
 
@@ -39,6 +39,7 @@ public class ScoreChart extends JComponent implements ThemeAware {
         Tokens t = Theme.tokens();
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         int w = getWidth(), h = getHeight();
 
         g2.setColor(t.bgCard);
@@ -47,14 +48,29 @@ public class ScoreChart extends JComponent implements ThemeAware {
         g2.drawRoundRect(0, 0, w - 1, h - 1, t.radiusMd, t.radiusMd);
 
         int padTop = t.space4 + 4;
-        int padLeft = t.space4;
         int padRight = t.space3;
-        int padBottom = t.space3;
+        int padBottom = t.space4 + 6;
+        int padLeftLabel = t.space3;
+        int yLabelW = 36;
+        int padLeft = padLeftLabel + yLabelW;
 
         g2.setFont(t.fontHeading);
         g2.setColor(t.fgDefault);
         FontMetrics tm = g2.getFontMetrics();
-        g2.drawString("评分曲线", padLeft, tm.getAscent() + 4);
+        g2.drawString("局面评分", padLeftLabel, tm.getAscent() + 4);
+
+        int legendY = tm.getAscent() + 4;
+        int legendX = w - padRight - 92;
+        g2.setFont(t.fontCaption);
+        FontMetrics cm = g2.getFontMetrics();
+        g2.setColor(t.fgDefault);
+        g2.fillRect(legendX, legendY - cm.getAscent() / 2 - 2, 10, 4);
+        g2.setColor(t.fgMuted);
+        g2.drawString("黑方", legendX + 14, legendY);
+        g2.setColor(t.danger);
+        g2.fillRect(legendX + 46, legendY - cm.getAscent() / 2 - 2, 10, 4);
+        g2.setColor(t.fgMuted);
+        g2.drawString("白方", legendX + 60, legendY);
 
         boolean empty = blackScores == null || whiteScores == null
                 || blackScores.length == 0 || whiteScores.length == 0;
@@ -88,28 +104,47 @@ public class ScoreChart extends JComponent implements ThemeAware {
         g2.drawLine(chartLeft, chartBottom, chartRight, chartBottom);
         g2.drawLine(chartLeft, chartTop, chartLeft, chartBottom);
 
+        g2.setFont(t.fontMono.deriveFont(10f));
+        FontMetrics ym = g2.getFontMetrics();
+        g2.setColor(t.fgMuted);
+        int[] yTicks = {0, 1, 2, 3};
+        for (int i : yTicks) {
+            int v = minV + (maxV - minV) * i / 3;
+            int y = chartBottom - chartH * i / 3;
+            String s = String.valueOf(v);
+            int sw = ym.stringWidth(s);
+            g2.drawString(s, chartLeft - sw - 4, y + ym.getAscent() / 2 - 2);
+            g2.setColor(new Color(t.borderLight.getRed(), t.borderLight.getGreen(),
+                    t.borderLight.getBlue(), 80));
+            if (i > 0) g2.drawLine(chartLeft + 1, y, chartRight, y);
+            g2.setColor(t.fgMuted);
+        }
+
         if (minV < 0 && maxV > 0) {
-            int zeroY = chartBottom - (int) ((0 - minV) * (long) chartH / (maxV - minV));
-            g2.setColor(new Color(t.borderMedium.getRed(), t.borderMedium.getGreen(), t.borderMedium.getBlue(), 90));
+            int zeroY = chartBottom - (int) ((0L - minV) * (long) chartH / (maxV - minV));
+            g2.setColor(new Color(t.borderMedium.getRed(), t.borderMedium.getGreen(),
+                    t.borderMedium.getBlue(), 140));
+            g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL,
+                    0f, new float[]{3f, 3f}, 0f));
             g2.drawLine(chartLeft, zeroY, chartRight, zeroY);
+            g2.setStroke(new BasicStroke(1f));
+        }
+
+        int[] xTicks = {0, 1, 2, 3, 4};
+        int span = (n > 1) ? (n - 1) : 1;
+        for (int i : xTicks) {
+            int idx = span * i / 4;
+            int x = chartLeft + chartW * i / 4;
+            String s = String.valueOf(idx + 1);
+            int sw = ym.stringWidth(s);
+            g2.setColor(t.fgMuted);
+            g2.drawString(s, x - sw / 2, chartBottom + ym.getAscent() + 2);
+            g2.setColor(t.borderMedium);
+            g2.drawLine(x, chartBottom, x, chartBottom + 3);
         }
 
         drawSeries(g2, blackScores, n, minV, maxV, chartLeft, chartTop, chartW, chartH, t.fgDefault);
         drawSeries(g2, whiteScores, n, minV, maxV, chartLeft, chartTop, chartW, chartH, t.danger);
-
-        g2.setFont(t.fontCaption);
-        g2.setColor(t.fgMuted);
-        FontMetrics cm = g2.getFontMetrics();
-        int legendY = chartTop - 4;
-        int legendX = chartRight - 80;
-        g2.setColor(t.fgDefault);
-        g2.fillRect(legendX, legendY - cm.getAscent() / 2 - 2, 10, 3);
-        g2.setColor(t.fgMuted);
-        g2.drawString("黑", legendX + 14, legendY);
-        g2.setColor(t.danger);
-        g2.fillRect(legendX + 36, legendY - cm.getAscent() / 2 - 2, 10, 3);
-        g2.setColor(t.fgMuted);
-        g2.drawString("白", legendX + 50, legendY);
 
         g2.dispose();
     }
@@ -126,7 +161,7 @@ public class ScoreChart extends JComponent implements ThemeAware {
             int x = chartLeft + (int) ((long) i * chartW / span);
             int y = chartTop + chartH - (int) ((long) (data[i] - minV) * chartH / range);
             if (prevX >= 0) g2.drawLine(prevX, prevY, x, y);
-            g2.fillOval(x - 2, y - 2, 4, 4);
+            g2.fillOval(x - 3, y - 3, 6, 6);
             prevX = x;
             prevY = y;
         }
