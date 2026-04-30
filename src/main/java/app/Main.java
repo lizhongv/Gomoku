@@ -36,6 +36,7 @@ public class Main {
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             Router router = new Router(frame);
             frame.setContentPane(router.cardHolder());
+            frame.setJMenuBar(buildMenuBar(frame, router));
             router.push(new HomeScene(router));
             frame.setSize(1100, 760);
             frame.setMinimumSize(new java.awt.Dimension(820, 600));
@@ -52,6 +53,63 @@ public class Main {
                 }
             });
         });
+    }
+
+    private static javax.swing.JMenuBar buildMenuBar(JFrame frame, ui.scene.Router router) {
+        javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
+
+        javax.swing.JMenu fileMenu = new javax.swing.JMenu("文件");
+        javax.swing.JMenuItem mExit = new javax.swing.JMenuItem("退出");
+        mExit.addActionListener(e -> System.exit(0));
+        fileMenu.add(mExit);
+
+        javax.swing.JMenu viewMenu = new javax.swing.JMenu("视图");
+        javax.swing.JMenuItem mHome = new javax.swing.JMenuItem("返回主页");
+        mHome.addActionListener(e -> router.replace(new ui.scene.HomeScene(router)));
+        javax.swing.JMenuItem mShop = new javax.swing.JMenuItem("商店");
+        mShop.addActionListener(e -> router.push(new ui.scene.ShopScene(router)));
+        javax.swing.JMenuItem mSettings = new javax.swing.JMenuItem("设置");
+        mSettings.addActionListener(e -> router.push(new ui.scene.SettingsScene(router)));
+        javax.swing.JMenuItem mLocal = new javax.swing.JMenuItem("本地棋谱");
+        mLocal.addActionListener(e -> router.push(new ui.scene.LocalManualScene(router)));
+        viewMenu.add(mHome);
+        viewMenu.addSeparator();
+        viewMenu.add(mShop);
+        viewMenu.add(mSettings);
+        viewMenu.add(mLocal);
+
+        javax.swing.JMenu helpMenu = new javax.swing.JMenu("帮助");
+        javax.swing.JMenuItem mRules = new javax.swing.JMenuItem("游戏规则");
+        mRules.addActionListener(e -> showRulesDialog(frame));
+        javax.swing.JMenuItem mGuide = new javax.swing.JMenuItem("新手引导");
+        mGuide.addActionListener(e -> new ui.scene.dialog.OnboardingDialog(frame).setVisible(true));
+        javax.swing.JMenuItem mAbout = new javax.swing.JMenuItem("关于");
+        mAbout.addActionListener(e -> new ui.scene.dialog.AboutDialog(frame).setVisible(true));
+        helpMenu.add(mRules);
+        helpMenu.add(mGuide);
+        helpMenu.add(mAbout);
+
+        bar.add(fileMenu);
+        bar.add(viewMenu);
+        bar.add(helpMenu);
+        return bar;
+    }
+
+    private static void showRulesDialog(JFrame owner) {
+        javax.swing.JEditorPane pane = new javax.swing.JEditorPane();
+        pane.setContentType("text/html");
+        pane.setEditable(false);
+        pane.setText("<html><body style='font-family:Microsoft YaHei UI;'>"
+                + "<h3>对局目标</h3>"
+                + "<p>在 15×15 棋盘上，先在横、竖、斜任一方向连成五子者胜。</p>"
+                + "<h3>基本规则</h3>"
+                + "<ul><li>黑棋先手，黑白双方轮流落子，每次仅落一颗。</li>"
+                + "<li>已落下的棋子不可移动或拿取。</li>"
+                + "<li>本作采用「无禁手」规则，黑白方权利对等。</li></ul>"
+                + "</body></html>");
+        javax.swing.JOptionPane.showMessageDialog(owner,
+                new javax.swing.JScrollPane(pane), "五子棋规则",
+                javax.swing.JOptionPane.PLAIN_MESSAGE);
     }
 
     private static void forceFontFamilyForAllFontKeys(Font uiFont) {
