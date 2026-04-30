@@ -28,6 +28,8 @@ public final class Fonts {
     public static Font serif(int size, int style) {
         return pick(new String[]{
             "STSong", "SimSun", "FangSong", "STKaiti", "KaiTi",
+            "Microsoft YaHei UI", "Microsoft YaHei",
+            "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
             "Georgia", "Times New Roman", "Serif"
         }, size, style);
     }
@@ -35,7 +37,9 @@ public final class Fonts {
     public static Font mono(int size, int style) {
         return pick(new String[]{
             "Consolas", "Cascadia Mono", "Menlo",
-            "DejaVu Sans Mono", Font.MONOSPACED
+            "DejaVu Sans Mono",
+            "Microsoft YaHei UI", "Microsoft YaHei",
+            Font.MONOSPACED
         }, size, style);
     }
 
