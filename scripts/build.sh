@@ -14,6 +14,11 @@ mkdir -p target/classes target/test-classes
 find src/main/java -name '*.java' > target/sources.txt
 javac -d target/classes -cp "lib/*" -encoding UTF-8 @target/sources.txt
 
+# 复制 classpath 资源（jar 内的 /assets/* 等）
+if [ -d src/main/resources ]; then
+    cp -r src/main/resources/. target/classes/
+fi
+
 find src/test/java -name '*.java' > target/test-sources.txt
 javac -d target/test-classes -cp "target/classes${SEP}lib/*" -encoding UTF-8 @target/test-sources.txt
 

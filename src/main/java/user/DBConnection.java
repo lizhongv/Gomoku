@@ -66,10 +66,23 @@ public class DBConnection {
 
 	private static Properties loadConfig() {
 		Properties p = new Properties();
-		try (FileInputStream in = new FileInputStream("db.properties")) {
-			p.load(in);
-		} catch (IOException ignored) {
+		// 1. 工作目录（开发 / 脚本运行）
+		if (tryLoad(p, new java.io.File("db.properties"))) return p;
+		// 2. 用户目录（jpackage 安装后的常驻位置）
+		String home = System.getProperty("user.home");
+		if (home != null) {
+			tryLoad(p, new java.io.File(home, ".gomoku/db.properties"));
 		}
 		return p;
+	}
+
+	private static boolean tryLoad(Properties p, java.io.File f) {
+		if (!f.isFile()) return false;
+		try (FileInputStream in = new FileInputStream(f)) {
+			p.load(in);
+			return true;
+		} catch (IOException ignored) {
+			return false;
+		}
 	}
 }

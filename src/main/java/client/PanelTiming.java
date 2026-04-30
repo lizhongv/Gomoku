@@ -20,8 +20,8 @@ public class PanelTiming extends JPanel {
 	Icon whiteIcon;
 
 	public PanelTiming() {
-		blackIcon = new ImageIcon("assets/black.jpg");
-		whiteIcon = new ImageIcon("assets/white.jpg");
+		blackIcon = new ImageIcon(getClass().getResource("/assets/black.jpg"));
+		whiteIcon = new ImageIcon(getClass().getResource("/assets/white.jpg"));
 
 		this.myIcon = new JLabel(blackIcon, SwingConstants.CENTER);
 		this.opIcon = new JLabel(whiteIcon, SwingConstants.CENTER);

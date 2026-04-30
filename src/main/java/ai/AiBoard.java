@@ -39,7 +39,7 @@ public class AiBoard extends JPanel {
 	public AiBoard(AiGame f) {
 		this.f = f;
 		boardStatus = new int[COLS + 1][ROWS + 1];
-		img = Toolkit.getDefaultToolkit().getImage("assets/board.jpg");
+		img = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/assets/board.jpg"));
 		this.addMouseListener(new MouseMonitor());
 		this.addMouseMotionListener((MouseMotionListener) new MouseMotionMonitor());
 	}

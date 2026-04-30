@@ -176,7 +176,7 @@ public class E2eTest {
 	}
 
 	static boolean manualFileExists(String winner) {
-		java.io.File dir = new java.io.File("manuals");
+		java.io.File dir = game.ManualDao.getDir();
 		java.io.File[] files = dir.listFiles();
 		if (files == null) return false;
 		for (java.io.File f : files) {

@@ -30,7 +30,7 @@ public class PanelBoard extends JPanel {
 
 	public PanelBoard(FiveClient fc) {
 		this.fc = fc;
-		img = Toolkit.getDefaultToolkit().getImage("assets/board.jpg");
+		img = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/assets/board.jpg"));
 		this.addMouseListener(new MouseMonitor());
 		this.addMouseMotionListener((MouseMotionListener) new MouseMotionMonitor());
 	}

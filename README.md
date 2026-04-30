@@ -184,6 +184,31 @@ scripts\run-tests.bat   # Windows
 
 ---
 
+## 打包成可分发软件
+
+把代码 + 资源 + JDBC 驱动 + JRE 全打到自带运行时的目录，用户**无需安装 Java** 就能双击 .exe 启动。
+
+```bash
+# 1) 先打 fat jar（target/gomoku-server.jar 和 gomoku-client.jar，含 JDBC，可直接 java -jar 跑）
+bash scripts/package.sh
+
+# 2) 再用 jpackage 打 app-image（自带 JRE，目录大小 ~128MB；脚本自动压成 .zip ~48MB）
+bash scripts/package-installer.sh
+```
+
+产物：
+
+- `target/gomoku-server.jar` / `target/gomoku-client.jar`：fat jar，需要目标机器有 JRE 17+
+- `target/installer/Gomoku-Server/`：自带 JRE 的服务端目录，运行 `Gomoku-Server.exe`
+- `target/installer/Gomoku-Client/`：自带 JRE 的客户端目录（联机 + 内嵌人机对战），运行 `Gomoku-Client.exe`
+- `target/installer/Gomoku-{Server,Client}-1.0.0.zip`：上面两个目录的压缩包，分发用
+
+> 当系统装了 [WiX 3.x](https://wixtoolset.org/) 时，`package-installer.sh` 会自动改打 `.msi` 真正的 Windows 安装包（带卸载器、开始菜单快捷方式）。
+
+**客户端运行时的可写目录**：`~/.gomoku/manuals/`（棋谱）、`~/.gomoku/db.properties`（DB 配置，可选）。安装包不会写到自身目录，可以装在 Program Files。
+
+---
+
 ## 启用 TLS（联机模式可选）
 
 ```bash

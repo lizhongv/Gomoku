@@ -5,6 +5,13 @@ out/
 *.iml
 *.class
 
+# 打包产物
+target/installer/
+target/jpackage-input/
+*.zip
+*.msi
+*.exe
+
 # 数据库密码（复制 db.properties.example 后改名为 db.properties）
 db.properties
 
