@@ -118,18 +118,32 @@ public class LoginDialog extends GDialog {
                     router.push(lobby);
                     break;
                 case "hasLogin":
-                    GToast.error(this, "该账号已在其他客户端登录");
+                    showError("登录失败", "账号 \"" + user + "\" 已在其他客户端登录。\n\n" +
+                            "请先关闭那台客户端再试。");
                     break;
                 case "fail":
-                    GToast.error(this, "用户名或密码错误（也可能尚未注册）");
+                    showError("登录失败", "用户名或密码错误。\n\n" +
+                            "可能原因：\n" +
+                            "• 账号尚未注册 → 点 [注册] 创建\n" +
+                            "• 密码输入有误（区分大小写）\n" +
+                            "• 用户名拼写错误");
                     break;
                 case "error":
                 default:
-                    GToast.error(this, "无法连接服务器，请确认 Gomoku-Server 已启动且 IP 正确");
+                    showError("无法连接服务器", "无法连接到 " + ip + "\n\n" +
+                            "请确认：\n" +
+                            "• Gomoku-Server.exe 已启动\n" +
+                            "• 服务器 IP 输入正确（本机用 127.0.0.1）\n" +
+                            "• 防火墙允许 TCP 端口 4801");
                     break;
             }
         } catch (Exception ex) {
-            GToast.error(this, "登录异常：" + ex.getClass().getSimpleName() + " " + ex.getMessage());
+            showError("登录异常", ex.getClass().getSimpleName() + ": " + ex.getMessage());
         }
+    }
+
+    private void showError(String title, String message) {
+        javax.swing.JOptionPane.showMessageDialog(this, message, title,
+                javax.swing.JOptionPane.ERROR_MESSAGE);
     }
 }

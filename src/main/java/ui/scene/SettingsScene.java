@@ -256,6 +256,8 @@ public class SettingsScene implements Scene {
 
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, t.space3, 0));
         row.setOpaque(false);
+        GButton avatar = GButton.secondary("更换头像");
+        avatar.addActionListener(e -> doChangeAvatar());
         GButton export = GButton.secondary("导出档案");
         export.addActionListener(e -> doExport());
         GButton clear = GButton.secondary("清空本地数据");
@@ -272,6 +274,7 @@ public class SettingsScene implements Scene {
                 System.exit(0);
             }
         });
+        row.add(avatar);
         row.add(export);
         row.add(clear);
         card.add(row, BorderLayout.CENTER);
@@ -307,6 +310,34 @@ public class SettingsScene implements Scene {
         l.setFont(t.fontHeading);
         l.setForeground(t.fgDefault);
         return l;
+    }
+
+    private void doChangeAvatar() {
+        javax.swing.JFileChooser fc = new javax.swing.JFileChooser();
+        fc.setDialogTitle("选择头像图片");
+        fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "图片 (*.png, *.jpg, *.jpeg)", "png", "jpg", "jpeg"));
+        if (fc.showOpenDialog(rootPanel) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        File src = fc.getSelectedFile();
+        try {
+            java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(src);
+            if (img == null) { GToast.error(rootPanel, "图片格式无法识别"); return; }
+            java.awt.image.BufferedImage scaled = new java.awt.image.BufferedImage(128, 128,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g = scaled.createGraphics();
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(img, 0, 0, 128, 128, null);
+            g.dispose();
+            File out = new File(AppConfig.get().avatarDir(), "me_" + System.currentTimeMillis() + ".png");
+            javax.imageio.ImageIO.write(scaled, "PNG", out);
+            Profile p = Profile.get();
+            p.avatarPath = out.getAbsolutePath();
+            p.save();
+            GToast.success(rootPanel, "头像已更新（重新进入大厅生效）");
+        } catch (Exception ex) {
+            GToast.error(rootPanel, "更换失败：" + ex.getMessage());
+        }
     }
 
     private void doExport() {

@@ -38,8 +38,8 @@ public class CloudManualsDialog extends GDialog {
         sp.setPreferredSize(new Dimension(420, 280));
         sp.setBorder(BorderFactory.createLineBorder(t.borderLight));
 
-        JLabel hint = new JLabel("加载中...");
-        hint.setFont(t.fontBody);
+        JLabel hint = new JLabel("<html>云端棋谱 · 服务器存的所有联机对战记录（含其他玩家做对手的对局）<br><i>加载中...</i></html>");
+        hint.setFont(t.fontCaption);
         hint.setForeground(t.fgMuted);
         hint.setBorder(BorderFactory.createEmptyBorder(0, 0, t.space2, 0));
 

@@ -49,10 +49,20 @@ public class LocalManualScene implements Scene {
         BrandHeader header = new BrandHeader();
         header.setCurrentUser(Profile.get().nickname, null);
 
+        JPanel titleBox = new JPanel();
+        titleBox.setOpaque(false);
+        titleBox.setLayout(new BoxLayout(titleBox, BoxLayout.Y_AXIS));
+        titleBox.setBorder(BorderFactory.createEmptyBorder(t.space2, t.space5, t.space2, t.space5));
         JLabel title = new JLabel("本地棋谱");
         title.setFont(t.fontDisplay);
         title.setForeground(t.fgDefault);
-        title.setBorder(BorderFactory.createEmptyBorder(t.space2, t.space5, t.space2, t.space5));
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel sub = new JLabel("含 AI 对战 + 联机对战的本地副本（仅本机可见）");
+        sub.setFont(t.fontCaption);
+        sub.setForeground(t.fgMuted);
+        sub.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleBox.add(title);
+        titleBox.add(sub);
 
         GButton back = GButton.ghost("← 返回");
         back.addActionListener(e -> router.pop());
@@ -62,7 +72,7 @@ public class LocalManualScene implements Scene {
         north.add(header, BorderLayout.NORTH);
         JPanel titleRow = new JPanel(new BorderLayout());
         titleRow.setOpaque(false);
-        titleRow.add(title, BorderLayout.WEST);
+        titleRow.add(titleBox, BorderLayout.WEST);
         JPanel backWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, t.space3, 0));
         backWrap.setOpaque(false);
         backWrap.add(back);
