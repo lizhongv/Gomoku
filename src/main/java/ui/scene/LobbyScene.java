@@ -14,7 +14,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListCellRenderer;
-import client.Communication;
+import net.Communication;
 import profile.Profile;
 import ui.Theme;
 import ui.component.BrandHeader;

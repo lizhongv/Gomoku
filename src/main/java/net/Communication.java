@@ -1,5 +1,5 @@
 // 客户端网络层：消息收发、登录 / 注册 / 对局命令封装
-package client;
+package net;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-
-import javax.swing.JOptionPane;
 
 import game.Game;
 import game.Manual;
@@ -19,15 +17,23 @@ import protocol.SafeObjectInputStream;
 import server.FiveServer;
 
 public class Communication {
-	FiveClient fc;
+	private GameClient client;
 	Socket s;
-	TimerThread tt;
 	private DataInputStream dis;
 	private DataOutputStream dos;
+	private String myName;
+	private boolean connected;
 
-	public Communication(FiveClient fc) {
-		this.fc = fc;
+	public Communication(GameClient client) {
+		this.client = client;
 	}
+
+	public void setClient(GameClient client) {
+		this.client = client;
+	}
+
+	public String getMyName() { return myName; }
+	public boolean isConnected() { return connected; }
 
 	class ReceiveThread extends Thread {
 		public void run() {
@@ -37,92 +43,46 @@ public class Communication {
 					dispatch(m);
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				if (client != null) client.onDisconnected();
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		private void dispatch(Message m) throws IOException {
 			String cmd = m.command();
 			if (Command.TELLNAME.equals(cmd)) {
-				fc.myname = m.arg(0);
-				fc.userList.userList.add(fc.myname + ": ready");
-				fc.timing.setMyName(fc.myname);
-				fc.message.messageArea.append("My name: " + fc.myname + " ready\n");
+				myName = m.arg(0);
+				if (client != null) client.onLoggedIn(myName);
 			} else if (Command.ADD.equals(cmd)) {
-				fc.userList.userList.add(m.arg(0) + ": " + m.arg(1));
-				fc.message.messageArea.append(m.arg(0) + ": " + m.arg(1) + "\n");
+				if (client != null) client.onUserList(m.arg(0), m.arg(1));
 			} else if (Command.JOIN.equals(cmd)) {
 				String name = m.arg(0);
 				String strTime = m.arg(1);
-				TimeDialog d = new TimeDialog();
-				fc.playingTime = Integer.parseInt(strTime);
-				int select = d.showDialog(fc, name + " 邀请您下棋(用时" + strTime + "秒)是否接受 ？", 100);
-				if (select == 0) {
-					Message.send(dos, Command.AGREE, name);
-				} else {
-					Message.send(dos, Command.REFUSE, name);
-				}
+				int seconds = 0;
+				try { seconds = Integer.parseInt(strTime); } catch (NumberFormatException ignored) {}
+				if (client != null) client.onInvite(name, seconds);
 			} else if (Command.REFUSE.equals(cmd)) {
-				JOptionPane.showMessageDialog(fc, m.arg(0) + "拒绝了您的邀请!");
+				if (client != null) client.onInviteRefused(m.arg(0));
 			} else if (Command.CHANGE.equals(cmd)) {
-				String name = m.arg(0);
-				String state = m.arg(1);
-				for (int i = 0; i < fc.userList.userList.getItemCount(); i++) {
-					if (fc.userList.userList.getItem(i).startsWith(name + ":")) {
-						fc.userList.userList.replaceItem(name + ": " + state, i);
-					}
-				}
-				fc.message.messageArea.append(name + " " + state + "\n");
+				if (client != null) client.onUserStateChange(m.arg(0), m.arg(1));
 			} else if (Command.GUESSCOLOR.equals(cmd)) {
 				String color = m.arg(0);
 				String oppName = m.arg(1);
-				fc.board.isGamming = true;
-				fc.opname = oppName;
-				fc.timing.setOpName(oppName);
-				if (color.equals("black")) {
-					fc.timing.setMyIcon("black");
-					fc.timing.setOpIcon("white");
-					fc.board.isBlack = true;
-					fc.board.isGoing = true;
-				} else {
-					fc.timing.setMyIcon("white");
-					fc.timing.setOpIcon("black");
-					fc.board.isBlack = false;
-					fc.board.isGoing = false;
-				}
-				fc.control.joinGameButton.setEnabled(false);
-				fc.control.cancelGameButton.setEnabled(true);
-				fc.control.exitGameButton.setEnabled(false);
-				fc.message.messageArea.append("My color is " + color + "\n");
-				tt = new TimerThread(fc, fc.playingTime);
-				tt.start();
+				if (client != null) client.onColor(color, oppName);
 			} else if (Command.GO.equals(cmd)) {
 				int col = Integer.parseInt(m.arg(0));
 				int row = Integer.parseInt(m.arg(1));
-				fc.board.addOpponentChess(col, row);
+				if (client != null) client.onOpponentMove(col, row);
 			} else if (Command.TELLRESULT.equals(cmd)) {
-				if ("win".equals(m.arg(0))) {
-					fc.board.winsGame();
-				} else {
-					fc.board.lossesGame();
-				}
-				fc.control.joinGameButton.setEnabled(true);
-				fc.control.cancelGameButton.setEnabled(false);
-				fc.control.exitGameButton.setEnabled(true);
+				boolean youWon = "win".equals(m.arg(0));
+				if (client != null) client.onResult(youWon);
 			} else if (Command.DELETE.equals(cmd)) {
-				String name = m.arg(0);
-				for (int i = 0; i < fc.userList.userList.getItemCount(); i++) {
-					if (fc.userList.userList.getItem(i).startsWith(name + ":")) {
-						fc.userList.userList.remove(i);
-						break;
-					}
-				}
-				fc.message.messageArea.append(name + " disconnected\n");
+				if (client != null) client.onUserLeft(m.arg(0));
 			} else if (Command.GAME.equals(cmd)) {
 				ObjectInputStream ois = new SafeObjectInputStream(s.getInputStream(), "game.Game");
 				try {
 					ArrayList<Game> games = (ArrayList<Game>) ois.readObject();
-					fc.showGames(games);
+					if (client != null) client.onGameList(games);
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 				}
@@ -130,17 +90,21 @@ public class Communication {
 				ObjectInputStream ois = new SafeObjectInputStream(s.getInputStream(), "game.Game", "game.Manual");
 				try {
 					Manual manual = (Manual) ois.readObject();
-					fc.playBack(manual);
+					if (client != null) client.onManual(manual);
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 				}
 			} else if (Command.TALK.equals(cmd)) {
-				fc.message.messageArea.append(m.arg(0) + ": " + m.argOr(1, "") + "\n");
+				if (client != null) client.onChat(m.arg(0), m.argOr(1, ""));
 			}
 		}
 	}
 
 	public boolean login(String iP, String userName, String passWord) {
+		return "ok".equals(loginStatus(iP, userName, passWord));
+	}
+
+	public String loginStatus(String iP, String userName, String passWord) {
 		try {
 			s = Net.newSocket(iP, FiveServer.TCP_PORT);
 			dis = new DataInputStream(s.getInputStream());
@@ -148,28 +112,19 @@ public class Communication {
 			Message.send(dos, Command.LOGIN, userName, passWord);
 			Message reply = Message.read(dis);
 			if (Command.LOGIN.equals(reply.command()) && "true".equals(reply.argOr(0, ""))) {
-				fc.isConnected = true;
+				connected = true;
 				new ReceiveThread().start();
-				fc.control.loginButton.setEnabled(false);
-				fc.control.joinGameButton.setEnabled(true);
-				fc.control.cancelGameButton.setEnabled(false);
-				fc.control.chessManualButton.setEnabled(true);
-				fc.control.exitGameButton.setEnabled(true);
-				fc.control.talkButton.setEnabled(true);
-				return true;
+				return "ok";
 			} else if ("hasLogin".equals(reply.argOr(0, ""))) {
 				closeSocket();
-				JOptionPane.showMessageDialog(fc, "该用户已经登录!");
-				return false;
+				return "hasLogin";
 			} else {
 				closeSocket();
-				JOptionPane.showMessageDialog(fc, "用户名或密码不符!");
-				return false;
+				return "fail";
 			}
 		} catch (IOException e) {
 			closeSocket();
-			e.printStackTrace();
-			return false;
+			return "error";
 		}
 	}
 
@@ -182,6 +137,14 @@ public class Communication {
 		}
 	}
 
+	public void agree(String name) {
+		try { Message.send(dos, Command.AGREE, name); } catch (IOException e) { e.printStackTrace(); }
+	}
+
+	public void refuse(String name) {
+		try { Message.send(dos, Command.REFUSE, name); } catch (IOException e) { e.printStackTrace(); }
+	}
+
 	public void join(String opponentName, String time) {
 		try {
 			Message.send(dos, Command.JOIN, opponentName, time);
@@ -190,13 +153,10 @@ public class Communication {
 		}
 	}
 
-	public void talk() {
-		String strMessage = JOptionPane.showInputDialog("请输入您要发送的消息：");
-		if (strMessage == null) {
-			return;
-		}
+	public void talk(String text) {
+		if (text == null) return;
 		try {
-			Message.send(dos, Command.TALK, strMessage);
+			Message.send(dos, Command.TALK, text);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

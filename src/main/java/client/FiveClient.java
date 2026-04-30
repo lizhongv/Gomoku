@@ -1,4 +1,5 @@
 // 客户端主入口：组装窗口 / 装配监听器
+// 注意：此类是阶段一前的旧 UI 入口，Phase 5.7 删除；保留是为过渡期可编译。
 package client;
 
 import java.awt.BorderLayout;
@@ -12,6 +13,8 @@ import javax.swing.JOptionPane;
 
 import game.Game;
 import game.Manual;
+import net.Communication;
+import net.NoopGameClient;
 
 public class FiveClient extends Frame {
 	PanelBoard board;
@@ -78,7 +81,7 @@ public class FiveClient extends Frame {
 				}
 				System.exit(0);
 			} else if (e.getSource() == control.loginButton) {
-				c = new Communication(FiveClient.this);
+				c = new Communication(new NoopGameClient());
 				new DialogLogin(FiveClient.this, FiveClient.this.control.inputIP.getText());
 			} else if (e.getSource() == control.joinGameButton) {
 				String select = userList.userList.getSelectedItem();
@@ -105,7 +108,7 @@ public class FiveClient extends Frame {
 			} else if (e.getSource() == control.chessManualButton) {
 				c.getGames(myname);
 			} else if (e.getSource() == control.talkButton) {
-				c.talk();
+				String text = JOptionPane.showInputDialog("请输入您要发送的消息："); if (text != null) c.talk(text);
 			} else if (e.getSource() == control.aiButton) {
 				new ai.AiGame();
 			}

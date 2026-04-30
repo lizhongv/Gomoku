@@ -12,7 +12,8 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
-import client.Communication;
+import net.Communication;
+import net.NoopGameClient;
 import ui.Theme;
 import ui.component.GButton;
 import ui.component.GDialog;
@@ -100,7 +101,7 @@ public class LoginDialog extends GDialog {
             return;
         }
         try {
-            Communication comm = new Communication(null);
+            Communication comm = new Communication(new NoopGameClient());
             boolean ok = comm.login(ip, user, pwd);
             if (ok) {
                 if (onLoginSuccess != null) onLoginSuccess.accept(comm);
