@@ -29,6 +29,7 @@ public class Profile {
 	// === 皮肤 / 商店 ===
 	public String skinId = "classic";
 	public String unlockedSkinIds = "classic";
+	public String avatarPath = "";
 
 	// === 金币 / 签到 ===
 	public int  coins = 0;
@@ -97,6 +98,7 @@ public class Profile {
 		p.weekStartMillis        = parseLong(props, "weekStartMillis", 0);
 		p.skinId                 = props.getProperty("skinId", "classic");
 		p.unlockedSkinIds        = props.getProperty("unlockedSkinIds", "classic");
+		p.avatarPath             = props.getProperty("avatarPath", "");
 		p.coins                  = parseInt(props, "coins", 0);
 		p.lastCheckinDate        = props.getProperty("lastCheckinDate", "");
 		p.consecutiveCheckinDays = parseInt(props, "consecutiveCheckinDays", 0);
@@ -129,6 +131,7 @@ public class Profile {
 		props.setProperty("weekStartMillis", String.valueOf(weekStartMillis));
 		props.setProperty("skinId", skinId == null ? "classic" : skinId);
 		props.setProperty("unlockedSkinIds", unlockedSkinIds == null ? "classic" : unlockedSkinIds);
+		props.setProperty("avatarPath", avatarPath == null ? "" : avatarPath);
 		props.setProperty("coins", String.valueOf(coins));
 		props.setProperty("lastCheckinDate", lastCheckinDate == null ? "" : lastCheckinDate);
 		props.setProperty("consecutiveCheckinDays", String.valueOf(consecutiveCheckinDays));

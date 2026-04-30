@@ -53,6 +53,7 @@ public class LobbyScene implements Scene, GameClient {
     private StatusBar statusBar;
     private ChatPanel chatPanel;
     private CloudManualsDialog cloudDialog;
+    private GAvatar profileAvatar;
 
     public LobbyScene(Router router, Communication comm) {
         this.router = router;
@@ -85,8 +86,9 @@ public class LobbyScene implements Scene, GameClient {
         GCard profileCard = new GCard(true);
         profileCard.setLayout(new BorderLayout(t.space3, 0));
 
-        GAvatar avatar = new GAvatar(56, false);
-        profileCard.add(avatar, BorderLayout.WEST);
+        profileAvatar = new GAvatar(56, false);
+        profileAvatar.setImagePath(Profile.get().avatarPath);
+        profileCard.add(profileAvatar, BorderLayout.WEST);
 
         JPanel center = new JPanel();
         center.setOpaque(false);
@@ -112,7 +114,7 @@ public class LobbyScene implements Scene, GameClient {
         profileCard.add(center, BorderLayout.CENTER);
 
         GButton change = GButton.secondary("更换头像");
-        change.addActionListener(e -> GToast.info(rootPanel, "更换头像：功能后续 Phase 实现"));
+        change.addActionListener(e -> changeAvatar());
         JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         east.setOpaque(false);
         east.add(change);
@@ -274,6 +276,37 @@ public class LobbyScene implements Scene, GameClient {
     private void doLogout() {
         try { comm.disConnect(); } catch (Exception ignored) {}
         router.pop();
+    }
+
+    private void changeAvatar() {
+        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                "图片文件 (jpg/png)", "jpg", "jpeg", "png"));
+        int r = chooser.showOpenDialog(rootPanel);
+        if (r != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        java.io.File src = chooser.getSelectedFile();
+        if (src == null || !src.isFile()) return;
+        try {
+            java.awt.image.BufferedImage orig = javax.imageio.ImageIO.read(src);
+            if (orig == null) { GToast.error(rootPanel, "图片读取失败"); return; }
+            java.awt.image.BufferedImage scaled = new java.awt.image.BufferedImage(
+                    128, 128, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g = scaled.createGraphics();
+            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.drawImage(orig, 0, 0, 128, 128, null);
+            g.dispose();
+            java.io.File dir = new java.io.File(System.getProperty("user.home"), ".gomoku/avatars");
+            dir.mkdirs();
+            java.io.File out = new java.io.File(dir, "me_" + System.currentTimeMillis() + ".png");
+            javax.imageio.ImageIO.write(scaled, "PNG", out);
+            Profile.get().avatarPath = out.getAbsolutePath();
+            Profile.get().save();
+            if (profileAvatar != null) profileAvatar.setImage(scaled);
+            GToast.success(rootPanel, "头像已更新");
+        } catch (Exception ex) {
+            GToast.error(rootPanel, "头像更新失败：" + ex.getMessage());
+        }
     }
 
     private void startAiGame() {

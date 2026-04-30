@@ -33,6 +33,15 @@ public class GAvatar extends JComponent implements ThemeAware {
         repaint();
     }
 
+    public void setImagePath(String p) {
+        try {
+            if (p != null && !p.isEmpty()) {
+                java.io.File f = new java.io.File(p);
+                if (f.isFile()) setImage(javax.imageio.ImageIO.read(f));
+            }
+        } catch (Exception ignored) {}
+    }
+
     public void setBlack(boolean v) {
         this.isBlack = v;
         repaint();

@@ -34,6 +34,7 @@ public class ProfileTest {
         p.skinId = "darkwood";
         p.unlockedSkinIds = "classic,darkwood";
         p.consecutiveCheckinDays = 5;
+        p.avatarPath = "/tmp/avatar.png";
         p.save();
 
         resetSingleton();
@@ -45,6 +46,7 @@ public class ProfileTest {
         eq("skinId round-trip", "darkwood", loaded.skinId);
         eq("unlockedSkins round-trip", "classic,darkwood", loaded.unlockedSkinIds);
         eq("checkin days", "5", String.valueOf(loaded.consecutiveCheckinDays));
+        eq("avatarPath round-trip", "/tmp/avatar.png", loaded.avatarPath);
     }
 
     static void testLoadOldProfileFillsDefaults() throws Exception {
@@ -64,6 +66,7 @@ public class ProfileTest {
         eq("新字段默认 elo=1200", "1200", String.valueOf(loaded.elo));
         eq("新字段默认 coins=0", "0", String.valueOf(loaded.coins));
         eq("新字段默认 skinId=classic", "classic", loaded.skinId);
+        eq("新字段默认 avatarPath=空", "", loaded.avatarPath);
     }
 
     static void resetSingleton() throws Exception {
