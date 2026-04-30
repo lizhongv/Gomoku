@@ -127,12 +127,15 @@ public class HomeScene implements Scene {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, t.space3, 0));
         actions.setOpaque(false);
+        GButton bShop    = GButton.ghost("商店");
         GButton bManual  = GButton.ghost("本地棋谱");
         GButton bSetting = GButton.ghost("设置");
         GButton bAbout   = GButton.ghost("关于");
+        bShop.addActionListener(e    -> router.push(new ShopScene(router)));
         bManual.addActionListener(e  -> GToast.info(rootPanel, "本地棋谱：功能后续 Phase 实现"));
         bSetting.addActionListener(e -> GToast.info(rootPanel, "设置：功能后续 Phase 实现"));
         bAbout.addActionListener(e   -> GToast.info(rootPanel, "关于：功能后续 Phase 实现"));
+        actions.add(bShop);
         actions.add(bManual);
         actions.add(bSetting);
         actions.add(bAbout);
