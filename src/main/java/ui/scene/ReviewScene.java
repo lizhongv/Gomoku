@@ -16,18 +16,22 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import java.io.File;
 import feature.review.ReviewEngine;
 import feature.review.ReviewMove;
 import feature.review.ReviewReport;
+import feature.share.ExportOpts;
+import feature.share.GifExporter;
+import feature.skin.SkinManager;
 import game.Manual;
 import profile.Profile;
 import ui.Theme;
+import ui.component.GToast;
 import ui.component.BrandHeader;
 import ui.component.GBoard;
 import ui.component.GButton;
 import ui.component.GCard;
 import ui.component.GSlider;
-import ui.component.GToast;
 import ui.component.ScoreChart;
 import ui.design.Tokens;
 
@@ -129,7 +133,7 @@ public class ReviewScene implements Scene {
         south.setOpaque(false);
         south.setBorder(BorderFactory.createEmptyBorder(0, t.space5, t.space3, t.space5));
         GButton exportBtn = GButton.secondary("导出 GIF");
-        exportBtn.addActionListener(e -> GToast.info(rootPanel, "导出 GIF：Phase 7 实现"));
+        exportBtn.addActionListener(e -> exportGif());
         GButton backBtn = GButton.primary("返回大厅");
         backBtn.addActionListener(e -> router.pop());
         south.add(exportBtn);
@@ -235,6 +239,32 @@ public class ReviewScene implements Scene {
             moveList.setSelectedIndex(sel);
             moveList.ensureIndexIsVisible(sel);
         }
+    }
+
+    private void exportGif() {
+        ExportOpts opts = new ExportOpts();
+        opts.skinId = SkinManager.current().id;
+        opts.maxFrames = Math.max(1, manual.getTotalStep());
+        opts.frameDelayMs = 800;
+        GToast.info(rootPanel, "GIF 导出中...");
+        new SwingWorker<File, Integer>() {
+            @Override
+            protected File doInBackground() throws Exception {
+                return GifExporter.export(manual, opts, (cur, total) -> publish(cur * 100 / total));
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    File f = get();
+                    GToast.success(SwingUtilities.getWindowAncestor(rootPanel),
+                            "已导出: " + f.getName());
+                } catch (Exception ex) {
+                    GToast.error(SwingUtilities.getWindowAncestor(rootPanel),
+                            "导出失败: " + ex.getMessage());
+                }
+            }
+        }.execute();
     }
 
     @Override public JComponent root() { return rootPanel; }
