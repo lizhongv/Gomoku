@@ -56,9 +56,24 @@ public class HomeScene implements Scene {
 
     private JPanel buildBrand() {
         Tokens t = Theme.tokens();
-        JPanel brand = new JPanel();
+        JPanel brand = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Tokens tk = Theme.tokens();
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                int w = getWidth(), h = getHeight();
+                Color c1 = new Color(tk.bgPrimary.getRed(), tk.bgPrimary.getGreen(), tk.bgPrimary.getBlue(), 0);
+                Color c2 = new Color(tk.bgSecondary.getRed(), tk.bgSecondary.getGreen(), tk.bgSecondary.getBlue(), 80);
+                g2.setPaint(new GradientPaint(0, 0, c1, 0, h, c2));
+                g2.fillRoundRect(0, 0, w, h, tk.radiusLg, tk.radiusLg);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
         brand.setOpaque(false);
         brand.setLayout(new BoxLayout(brand, BoxLayout.Y_AXIS));
+        brand.setBorder(BorderFactory.createEmptyBorder(t.space4, t.space4, t.space4, t.space4));
 
         GAvatar logo = new GAvatar(96, true);
         logo.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -68,16 +83,31 @@ public class HomeScene implements Scene {
         title.setForeground(t.fgDefault);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        JPanel chipRow = new JPanel(new FlowLayout(FlowLayout.CENTER, t.space2, 0));
+        chipRow.setOpaque(false);
+        chipRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+        ui.component.GChip ver = new ui.component.GChip("v1.0 · 阶段一", t.accent, t.fgOnAccent);
+        chipRow.add(ver);
+
         JLabel sub = new JLabel("经典策略对战 · 局域网联机 · 人机对战", SwingConstants.CENTER);
         sub.setFont(t.fontBody);
         sub.setForeground(t.fgMuted);
         sub.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        JLabel hint = new JLabel("今日推荐：标准难度 · 自由对局", SwingConstants.CENTER);
+        hint.setFont(t.fontCaption);
+        hint.setForeground(t.fgMuted);
+        hint.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         brand.add(logo);
         brand.add(Box.createVerticalStrut(t.space3));
         brand.add(title);
         brand.add(Box.createVerticalStrut(t.space2));
+        brand.add(chipRow);
+        brand.add(Box.createVerticalStrut(t.space2));
         brand.add(sub);
+        brand.add(Box.createVerticalStrut(t.space1 + 2));
+        brand.add(hint);
         return brand;
     }
 
@@ -140,10 +170,10 @@ public class HomeScene implements Scene {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, t.space3, 0));
         actions.setOpaque(false);
-        GButton bShop    = GButton.ghost("商店");
-        GButton bManual  = GButton.ghost("本地棋谱");
-        GButton bSetting = GButton.ghost("设置");
-        GButton bAbout   = GButton.ghost("关于");
+        GButton bShop    = GButton.ghost("[商店] 商店");
+        GButton bManual  = GButton.ghost("[棋谱] 本地棋谱");
+        GButton bSetting = GButton.ghost("[设置] 设置");
+        GButton bAbout   = GButton.ghost("[关于] 关于");
         bShop.addActionListener(e    -> router.push(new ShopScene(router)));
         bManual.addActionListener(e  -> router.push(new LocalManualScene(router)));
         bSetting.addActionListener(e -> router.push(new SettingsScene(router)));
@@ -156,12 +186,29 @@ public class HomeScene implements Scene {
 
         GCard profileCard = new GCard(false);
         profileCard.setLayout(new BorderLayout(t.space3, 0));
+        profileCard.setBorder(BorderFactory.createEmptyBorder(t.space3, t.space3, t.space3, t.space3));
+
+        JPanel avatarBox = new JPanel(new BorderLayout());
+        avatarBox.setOpaque(false);
+        avatarBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(2, 2, 2, 2),
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 220), 2, true)));
         GAvatar mini = new GAvatar(40, false);
-        profileCard.add(mini, BorderLayout.WEST);
+        avatarBox.add(mini, BorderLayout.CENTER);
+        profileCard.add(avatarBox, BorderLayout.WEST);
+
         profileLine = new JLabel(buildProfileText());
         profileLine.setFont(t.fontBody);
         profileLine.setForeground(t.fgDefault);
         profileCard.add(profileLine, BorderLayout.CENTER);
+
+        JPanel chipsRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, t.space2, 0));
+        chipsRight.setOpaque(false);
+        Profile p = Profile.get();
+        chipsRight.add(new ui.component.GChip(p.levelTitle() + " · Lv." + p.level(), t.accent, t.fgOnAccent));
+        chipsRight.add(new ui.component.GChip("金币 " + feature.shop.CoinManager.balance(),
+                new Color(0xF59E0B), t.fgOnAccent));
+        profileCard.add(chipsRight, BorderLayout.EAST);
 
         south.add(actions, BorderLayout.NORTH);
         south.add(profileCard, BorderLayout.SOUTH);
@@ -170,8 +217,7 @@ public class HomeScene implements Scene {
 
     private String buildProfileText() {
         Profile p = Profile.get();
-        return "欢迎回来，" + p.nickname + "！您已对局 " + p.totalGames()
-            + " 次，" + p.levelTitle() + "(Lv." + p.level() + ")";
+        return "欢迎回来，" + p.nickname + " · 已对局 " + p.totalGames() + " 次";
     }
 
     @Override public JComponent root() { return rootPanel; }
@@ -183,6 +229,7 @@ public class HomeScene implements Scene {
     private static class GradientCard extends GCard {
         private final Color from, to;
         private final String headline, subline;
+        private boolean hover;
 
         GradientCard(Color from, Color to, String headline, String subline) {
             super(true);
@@ -193,6 +240,10 @@ public class HomeScene implements Scene {
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setOpaque(false);
             buildBody();
+            addMouseListener(new MouseAdapter() {
+                @Override public void mouseEntered(MouseEvent e) { hover = true; repaint(); }
+                @Override public void mouseExited(MouseEvent e) { hover = false; repaint(); }
+            });
         }
 
         private void buildBody() {
@@ -200,6 +251,7 @@ public class HomeScene implements Scene {
             JPanel inner = new JPanel();
             inner.setOpaque(false);
             inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
+            inner.setBorder(BorderFactory.createEmptyBorder(t.space5, t.space5, t.space5, t.space5));
 
             JLabel h = new JLabel(headline);
             h.setFont(t.fontDisplay);
@@ -211,10 +263,17 @@ public class HomeScene implements Scene {
             s.setForeground(t.fgOnAccent);
             s.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+            JLabel arrow = new JLabel("立即开始 →");
+            arrow.setFont(t.fontBody);
+            arrow.setForeground(t.fgOnAccent);
+            arrow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
             inner.add(Box.createVerticalGlue());
             inner.add(h);
             inner.add(Box.createVerticalStrut(t.space2));
             inner.add(s);
+            inner.add(Box.createVerticalStrut(t.space3));
+            inner.add(arrow);
             inner.add(Box.createVerticalGlue());
             add(inner, BorderLayout.CENTER);
             setPreferredSize(new Dimension(360, 220));
@@ -227,17 +286,22 @@ public class HomeScene implements Scene {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth(), h = getHeight();
             int r = t.radiusLg;
-            int rectH = h - 3;
+            int rectH = h - 6;
             Color shadow = t.boardShadow;
             int sa = shadow.getAlpha();
-            for (int i = 1; i <= 3; i++) {
-                int alpha = Math.max(0, sa / (i + 2));
+            int layers = hover ? 6 : 3;
+            for (int i = 1; i <= layers; i++) {
+                int alpha = Math.max(0, sa / (i + (hover ? 1 : 2)));
                 g2.setColor(new Color(shadow.getRed(), shadow.getGreen(), shadow.getBlue(), alpha));
                 g2.fillRoundRect(0, i, w, rectH, r, r);
             }
             GradientPaint gp = new GradientPaint(0, 0, from, w, rectH, to);
             g2.setPaint(gp);
             g2.fillRoundRect(0, 0, w, rectH, r, r);
+            if (hover) {
+                g2.setColor(new Color(255, 255, 255, 32));
+                g2.fillRoundRect(0, 0, w, rectH, r, r);
+            }
             g2.dispose();
         }
     }
