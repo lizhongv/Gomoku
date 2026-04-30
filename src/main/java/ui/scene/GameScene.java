@@ -10,11 +10,15 @@ import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import feature.emote.Emote;
+import feature.emote.EmoteParser;
 import net.GameSession;
 import profile.Profile;
 import ui.Theme;
 import ui.component.BrandHeader;
 import ui.component.ChatPanel;
+import ui.component.EmoteBar;
 import ui.component.GBoard;
 import ui.component.GButton;
 import ui.component.GCard;
@@ -93,7 +97,9 @@ public class GameScene implements Scene {
         chatBtn.addActionListener(e -> {
             String text = JOptionPane.showInputDialog(rootPanel, "请输入消息：");
             if (text != null && !text.trim().isEmpty()) {
-                chat.appendChat(Profile.get().nickname, text.trim(), true);
+                String trimmed = text.trim();
+                session.sendChat(trimmed);
+                chat.appendChat(Profile.get().nickname, trimmed, true);
                 GToast.info(rootPanel, "消息已发送");
             }
         });
@@ -103,7 +109,7 @@ public class GameScene implements Scene {
         GButton emojiBtn = GButton.secondary("表情");
         emojiBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         emojiBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-        emojiBtn.addActionListener(e -> GToast.info(rootPanel, "表情：Phase 7 实现"));
+        emojiBtn.addActionListener(e -> showEmotePicker());
         side.add(emojiBtn);
         side.add(Box.createVerticalStrut(t.space2));
 
@@ -147,6 +153,25 @@ public class GameScene implements Scene {
     }
 
     private static String safe(String s) { return (s == null || s.isEmpty()) ? "对手" : s; }
+
+    private void showEmotePicker() {
+        java.awt.Window owner = SwingUtilities.getWindowAncestor(rootPanel);
+        GDialog d = new GDialog(owner, "选择表情", false);
+        EmoteBar bar = new EmoteBar(emote -> sendEmote(emote, d));
+        d.getContentPane().setLayout(new BorderLayout());
+        d.getContentPane().add(bar, BorderLayout.CENTER);
+        d.setSize(new Dimension(420, 200));
+        d.setLocationRelativeTo(rootPanel);
+        d.setVisible(true);
+    }
+
+    private void sendEmote(Emote emote, GDialog d) {
+        if (emote == null) return;
+        String wrapped = EmoteParser.wrap(emote);
+        session.sendChat(wrapped);
+        chat.appendChat(Profile.get().nickname, wrapped, true);
+        d.dispose();
+    }
 
     private int confirm(Component parent, String msg, String title) {
         return JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.OK_CANCEL_OPTION);

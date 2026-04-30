@@ -12,6 +12,7 @@ public interface GameSession {
     void giveup();
     void claimWin();
     void leave();
+    default void sendChat(String content) {}
     void subscribe(Consumer<GameSessionEvent> handler);
 
     enum EventType { MY_TURN, OPP_MOVE, RESULT_WIN, RESULT_LOSE, OPP_LEFT, CHAT }

@@ -7,6 +7,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Optional;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -15,6 +16,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
+import feature.emote.Emote;
+import feature.emote.EmoteParser;
 import ui.Theme;
 import ui.ThemeAware;
 import ui.design.Tokens;
@@ -92,11 +95,21 @@ public class ChatPanel extends JPanel implements ThemeAware {
         StyleConstants.setFontSize(nameAttr, t.fontBody.getSize());
         appendStyled(name + ": ", nameAttr);
 
-        SimpleAttributeSet bodyAttr = new SimpleAttributeSet();
-        StyleConstants.setForeground(bodyAttr, t.fgDefault);
-        StyleConstants.setFontFamily(bodyAttr, t.fontBody.getFamily());
-        StyleConstants.setFontSize(bodyAttr, t.fontBody.getSize());
-        appendStyled(content + "\n", bodyAttr);
+        Optional<Emote> emote = EmoteParser.parse(content);
+        if (emote.isPresent()) {
+            SimpleAttributeSet emoteAttr = new SimpleAttributeSet();
+            StyleConstants.setForeground(emoteAttr, t.accent);
+            StyleConstants.setBold(emoteAttr, true);
+            StyleConstants.setFontFamily(emoteAttr, t.fontBody.getFamily());
+            StyleConstants.setFontSize(emoteAttr, t.fontBody.getSize() + 2);
+            appendStyled("✨ " + emote.get().text + "\n", emoteAttr);
+        } else {
+            SimpleAttributeSet bodyAttr = new SimpleAttributeSet();
+            StyleConstants.setForeground(bodyAttr, t.fgDefault);
+            StyleConstants.setFontFamily(bodyAttr, t.fontBody.getFamily());
+            StyleConstants.setFontSize(bodyAttr, t.fontBody.getSize());
+            appendStyled(content + "\n", bodyAttr);
+        }
     }
 
     public void clear() {

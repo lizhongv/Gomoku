@@ -33,6 +33,7 @@ public class OnlineGameSession implements GameSession, GameClient {
     @Override public void giveup() { comm.giveup(); }
     @Override public void claimWin() { comm.wins(); }
     @Override public void leave() { comm.disConnect(); }
+    @Override public void sendChat(String content) { if (content != null) comm.talk(content); }
 
     @Override public void subscribe(Consumer<GameSessionEvent> handler) {
         if (handler != null) handlers.add(handler);
