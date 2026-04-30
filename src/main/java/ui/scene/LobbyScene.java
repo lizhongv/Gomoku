@@ -146,7 +146,11 @@ public class LobbyScene implements Scene {
             GButton b = (i == 0) ? GButton.primary(label) : GButton.secondary(label);
             b.setAlignmentX(Component.CENTER_ALIGNMENT);
             b.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 40));
-            b.addActionListener(e -> GToast.info(rootPanel, label + "：功能后续 Phase 实现"));
+            if ("本地棋谱".equals(label)) {
+                b.addActionListener(e -> router.push(new LocalManualScene(router)));
+            } else {
+                b.addActionListener(e -> GToast.info(rootPanel, label + "：功能后续 Phase 实现"));
+            }
             card.add(b);
             if (i < labels.length - 1) card.add(Box.createVerticalStrut(t.space2));
         }

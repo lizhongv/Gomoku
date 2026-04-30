@@ -139,7 +139,7 @@ public class HomeScene implements Scene {
         GButton bSetting = GButton.ghost("设置");
         GButton bAbout   = GButton.ghost("关于");
         bShop.addActionListener(e    -> router.push(new ShopScene(router)));
-        bManual.addActionListener(e  -> GToast.info(rootPanel, "本地棋谱：功能后续 Phase 实现"));
+        bManual.addActionListener(e  -> router.push(new LocalManualScene(router)));
         bSetting.addActionListener(e -> router.push(new SettingsScene(router)));
         bAbout.addActionListener(e   -> new ui.scene.dialog.AboutDialog(
                 SwingUtilities.getWindowAncestor(rootPanel)).setVisible(true));
