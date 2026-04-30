@@ -1,7 +1,10 @@
 package app;
 
+import java.awt.Font;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.plaf.FontUIResource;
 import com.formdev.flatlaf.FlatLightLaf;
 import feature.rank.RankSubscriber;
 import feature.shop.CoinEarnSubscriber;
@@ -11,12 +14,14 @@ import feature.sound.SoundManager;
 import feature.sound.SoundSubscriber;
 import profile.Profile;
 import ui.component.GToast;
+import ui.design.Fonts;
 import ui.scene.HomeScene;
 import ui.scene.Router;
 
 public class Main {
     public static void main(String[] args) {
         FlatLightLaf.setup();
+        installChineseCapableUIFont();
         Profile.get();
         SkinManager.init();
         SoundManager.preload();
@@ -45,5 +50,20 @@ public class Main {
                 }
             });
         });
+    }
+
+    private static void installChineseCapableUIFont() {
+        Font base = Fonts.sans(13, Font.PLAIN);
+        FontUIResource uiFont = new FontUIResource(base);
+        UIManager.put("defaultFont", uiFont);
+        java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object k = keys.nextElement();
+            Object v = UIManager.get(k);
+            if (v instanceof FontUIResource) {
+                FontUIResource old = (FontUIResource) v;
+                UIManager.put(k, new FontUIResource(uiFont.getFamily(), old.getStyle(), old.getSize()));
+            }
+        }
     }
 }
