@@ -19,8 +19,10 @@ import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JOptionPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import net.AiGameSession;
 import profile.Profile;
 import ui.Theme;
 import ui.component.GAvatar;
@@ -97,9 +99,7 @@ public class HomeScene implements Scene {
         GradientCard aiCard = new GradientCard(aiFrom, aiTo,
             "人机对战", "本地 AI · 多种难度 · 即开即玩");
         aiCard.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) {
-                GToast.info(rootPanel, "人机对战：进 GameScene（Phase 5 实现）");
-            }
+            @Override public void mouseClicked(MouseEvent e) { onAiClicked(); }
         });
 
         grid.add(onlineCard);
@@ -108,16 +108,23 @@ public class HomeScene implements Scene {
     }
 
     private void onOnlineClicked() {
-        Profile p = Profile.get();
-        boolean loggedIn = p.nickname != null
-            && !p.nickname.isEmpty()
-            && !"玩家".equals(p.nickname);
-        if (loggedIn) {
-            GToast.info(rootPanel, "联机功能：进 LobbyScene");
-        } else {
-            new LoginDialog(SwingUtilities.getWindowAncestor(root()),
-                comm -> router.push(new LobbyScene(router, comm))).setVisible(true);
-        }
+        new LoginDialog(SwingUtilities.getWindowAncestor(rootPanel),
+            comm -> router.push(new LobbyScene(router, comm))).setVisible(true);
+    }
+
+    private void onAiClicked() {
+        Object[] difficulties = {"简单 (深度 1)", "标准 (深度 3)", "困难 (深度 5)", "取消"};
+        int choice = JOptionPane.showOptionDialog(
+            SwingUtilities.getWindowAncestor(rootPanel),
+            "请选择 AI 难度（你执黑先手）",
+            "人机对战",
+            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+            null, difficulties, difficulties[1]);
+        if (choice < 0 || choice == 3) return;
+        int[] depths  = {1, 3, 5};
+        int[] samples = {5, 10, 15};
+        AiGameSession session = new AiGameSession("black", depths[choice], samples[choice]);
+        router.push(new GameScene(router, session));
     }
 
     private JPanel buildSouth() {
