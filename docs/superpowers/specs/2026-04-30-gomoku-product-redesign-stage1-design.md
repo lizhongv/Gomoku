@@ -43,13 +43,14 @@
 
 ```
 src/main/java/
-├── core/                  保留不动
+├── core/                  保留不动（仅 model 包做轻量重组）
 │   ├── protocol/          Message, Net, SafeObjectInputStream, Command
-│   ├── model/             Game, Manual, Profile（从 game/profile 移过来）
+│   ├── model/             Profile（从 profile/ 移过来；Game/Manual 保留在 game/）
 │   ├── config/            AppConfig
-│   ├── server/            FiveServer, GameDao, ManualDao, UserDao 等
-│   ├── user/              User, PasswordHash, DBConnection
-│   └── ai/                Evaluate（纯算法）
+│   ├── server/            FiveServer（不动）
+│   ├── game/              Game, Manual, GameDao, ManualDao（保持包名以减少改动面）
+│   ├── user/              User, UserDao, PasswordHash, DBConnection
+│   └── ai/                Evaluate（纯算法，AiBoard/AiChess/AiGame 已被 GameScene 吸收）
 │
 ├── ui/                    全新设计系统
 │   ├── design/            DesignTokens, Skin, BoardStyle, PieceStyle, Fonts
@@ -68,11 +69,21 @@ src/main/java/
 │   ├── share/             GifExporter, ExportOpts
 │   └── shop/              ShopScene 内部组件 + PurchaseDialog
 │
-├── net/Communication.java  纯网络层（无 UI 依赖）
+├── net/                    会话层
+│   ├── Communication.java  纯网络层（无 UI 依赖）
+│   ├── GameSession.java    对局会话抽象接口
+│   ├── OnlineGameSession.java  走 Communication 的实现
+│   └── AiGameSession.java      走本地 Evaluate 的实现
 └── app/Main.java           启动入口
 ```
 
-> 注：`ai/AiBoard,AiChess,AiGame` 在阶段一被 `ui/scene/GameScene` 统一吸收（GameScene 同时支撑联机和人机两种模式，区别只在 `Communication` 是真网络还是 AI 模拟）。
+> 注：`ai/AiBoard,AiChess,AiGame` 在阶段一被 `ui/scene/GameScene` 统一吸收。
+> GameScene 通过 `GameSession` 抽象支撑两种模式：
+> - `OnlineGameSession`：底层走 `net/Communication` 收发协议帧
+> - `AiGameSession`：本地维护对局状态，AI 由 `core/ai/Evaluate` 异步算
+>
+> GameScene 只调用 `session.makeMove()` / `session.giveup()` / `session.subscribe(callback)`，
+> 不区分网络 vs 单机。
 
 ### 2.3 设计系统三要素
 
@@ -143,7 +154,7 @@ class Skin {
 
 ### 2.4 Scene / Router 视图层
 
-5 个 Scene，由 Router 切换，互不直接耦合：
+6 个 Scene，由 Router 切换，互不直接耦合：
 
 | Scene | 何时显示 | 内容 |
 |---|---|---|
@@ -247,13 +258,20 @@ class ReviewMove {
 }
 ```
 
-**算法**：每手前后各跑一次 `Evaluate.evaluateGame()` → 取差值。绝对值越大越关键。Tag 阈值：
-- `BLUNDER`: |delta| > 5000
-- `MISTAKE`: |delta| > 1000
-- `INACCURATE`: |delta| > 300
-- `OK`: |delta| <= 300
-- `GOOD`: 该手是同位置最优解
-- `BRILLIANT`: 该手 delta 优于次优解 > 1000
+**算法**：
+- 复盘时对每一手，把局面回退到该手前 → 跑 `Evaluate.getTheBestPosition()` 得到 AI 推荐位 + 评分
+- 比较实际落子与 AI 推荐位 → 计算 delta（己方视角）
+
+**Tag 阈值**（基于实际手与 AI 推荐手的评分差）：
+- `BRILLIANT`: 实际手 = AI 推荐手 且该手将局面分提升 > 5000
+- `GOOD`: 实际手 = AI 推荐手
+- `OK`: 评分差 <= 300
+- `INACCURATE`: 300 < 评分差 <= 1000
+- `MISTAKE`: 1000 < 评分差 <= 5000
+- `BLUNDER`: 评分差 > 5000
+
+**性能优化**：每手只跑一次 `getTheBestPosition`（深度由 `aiDepth` 控制，复盘默认 = 标准难度 = 3）。
+不需要"全位置评估"，避免 O(n²) 爆炸。
 
 **ReviewScene 布局**：
 - 左：GBoard 复用 + 拖动 GSlider 跳到任意手
@@ -311,11 +329,14 @@ enum SoundId {
 
 ```java
 class RankCalculator {
-  // 联机：标准 ELO，K=32
-  // 人机：AI 难度作为对手 ELO（简单=800, 标准=1200, 困难=1600）
-  static int calcDelta(int myElo, int oppElo, boolean won);
+  // 联机：标准 ELO 公式，K=32
+  // 人机：AI 难度作为对手 ELO（简单=800 / 标准=1200 / 困难=1600）
+  //       + K 系数减半（K=16）— 人机分量打折，避免刷分上分
+  static int calcDelta(int myElo, int oppElo, boolean won, GameType type);
   static Tier tierOf(int elo);
 }
+
+enum GameType { ONLINE, AI_EASY, AI_NORMAL, AI_HARD }
 
 class Rank {
   int elo;
@@ -412,7 +433,16 @@ class ExportOpts {
 **金币系统**（纯本地 int，写 profile）：
 - 每日签到：连续天数算法（lastCheckin = 昨天 → 连续天数 +1，否则重置 1）
 - 签到奖励：每日 +10 金币 / 连续 7 天 +50 / 连续 14 天 +100 / 连续 30 天 弹"皮肤碎片"占位 GToast
-- 每胜利 +5 金币
+- 联机胜利 +10 金币 / AI 胜利 +5 金币（区分"含金量"，鼓励联机）
+- 失败不扣分（避免负反馈）
+
+**示意价格表**（皮肤）：
+- ClassicSkin：免费（默认）
+- DarkWoodSkin：800 金币（约 80 局）
+- JadeSkin：1500 金币（高级）
+- NeonSkin：2500 金币（限定）
+
+让用户能"努力一下就买得起"DarkWood，"短期内攒不起"Jade/Neon — 制造稀缺感。
 
 **ShopScene 内容**：
 - 顶部金币条：当前金币 + 签到状态（"今日已签到，连续 5 天"）
@@ -591,7 +621,7 @@ ReviewScene 导出按钮 → 选当前皮肤 + 帧速度 → SwingWorker.execute
 | GIF 导出在大对局（>50 手）内存溢出 | 中 | 流式编码 + 限制最大帧数 100 |
 | 4 张皮肤设计审美参差 | 已规避 | 阶段一只精修 Classic，其他 3 套作为占位 |
 | jpackage 包变大（animated-gif-lib + 音效）| 低 | 当前 ~50MB，加完仍 < 60MB |
-| 重写期间 36 E2E 断点 | 中 | 每个步骤完成立即跑全套测试，不留累计回归 |
+| 重写期间 36 E2E 被打破 | 中 | 每个步骤完成立即跑全套测试，不留累计回归 |
 | 用户在阶段一中途希望改方向 | 中 | spec 是基线；任何调整记录在 spec 修订日志 |
 
 ---
