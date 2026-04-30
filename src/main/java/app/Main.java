@@ -4,6 +4,8 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import com.formdev.flatlaf.FlatLightLaf;
 import feature.skin.SkinManager;
+import feature.sound.SoundManager;
+import feature.sound.SoundSubscriber;
 import profile.Profile;
 import ui.scene.HomeScene;
 import ui.scene.Router;
@@ -13,6 +15,8 @@ public class Main {
         FlatLightLaf.setup();
         Profile.get();
         SkinManager.init();
+        SoundManager.preload();
+        SoundSubscriber.install();
 
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Gomoku 五子棋");
