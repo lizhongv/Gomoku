@@ -114,12 +114,18 @@ public class HomeScene implements Scene {
 
     private void onAiClicked() {
         Object[] difficulties = {"简单 (深度 1)", "标准 (深度 3)", "困难 (深度 5)", "取消"};
+        int defIdx;
+        switch (Profile.get().aiDefaultDepth) {
+            case 1: defIdx = 0; break;
+            case 5: defIdx = 2; break;
+            default: defIdx = 1; break;
+        }
         int choice = JOptionPane.showOptionDialog(
             SwingUtilities.getWindowAncestor(rootPanel),
             "请选择 AI 难度（你执黑先手）",
             "人机对战",
             JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
-            null, difficulties, difficulties[1]);
+            null, difficulties, difficulties[defIdx]);
         if (choice < 0 || choice == 3) return;
         int[] depths  = {1, 3, 5};
         int[] samples = {5, 10, 15};

@@ -234,7 +234,7 @@ public class LobbyScene implements Scene, GameClient {
         panel.setOpaque(false);
         panel.add(new JLabel("用时（秒）："));
         GTextField timeField = new GTextField(8);
-        timeField.setText("300");
+        timeField.setText(String.valueOf(Profile.get().inviteSeconds));
         panel.add(timeField);
         d.getContentPane().add(panel, BorderLayout.CENTER);
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, t.space2, 0));
@@ -415,7 +415,8 @@ public class LobbyScene implements Scene, GameClient {
 
     @Override public void onColor(String color, String oppName) {
         runOnEdt(() -> {
-            OnlineGameSession session = new OnlineGameSession(comm, oppName, 300);
+            OnlineGameSession session = new OnlineGameSession(comm, oppName,
+                    Profile.get().inviteSeconds);
             session.onColor(color, oppName);
             router.push(new GameScene(router, session));
         });

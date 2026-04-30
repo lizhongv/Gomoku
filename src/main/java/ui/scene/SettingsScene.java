@@ -157,10 +157,21 @@ public class SettingsScene implements Scene {
         JLabel fontLbl = new JLabel("字体");
         fontLbl.setFont(t.fontBody);
         fontLbl.setForeground(t.fgMuted);
-        String[] fonts = {"系统默认", "微软雅黑", "思源黑体", "楷体"};
-        JComboBox<String> fontBox = new JComboBox<>(fonts);
+        String[] fontKeys = {"default", "microsoft_yahei", "source_han", "kaiti"};
+        String[] fontNames = {"系统默认", "微软雅黑", "思源黑体", "楷体"};
+        JComboBox<String> fontBox = new JComboBox<>(fontNames);
         fontBox.setFont(t.fontBody);
-        fontBox.addActionListener(e -> GToast.info(rootPanel, "字体设置将在下次启动生效"));
+        String cur = Profile.get().fontFamily == null ? "default" : Profile.get().fontFamily;
+        for (int i = 0; i < fontKeys.length; i++) {
+            if (fontKeys[i].equals(cur)) { fontBox.setSelectedIndex(i); break; }
+        }
+        fontBox.addActionListener(e -> {
+            int idx = fontBox.getSelectedIndex();
+            if (idx < 0) return;
+            Profile.get().fontFamily = fontKeys[idx];
+            Profile.get().save();
+            GToast.info(rootPanel, "字体设置将在下次启动生效");
+        });
         row.add(fontLbl);
         row.add(fontBox);
         card.add(row, BorderLayout.CENTER);
@@ -184,12 +195,21 @@ public class SettingsScene implements Scene {
         difLbl.setForeground(t.fgMuted);
         difRow.add(difLbl);
         String[] difficulties = {"简单", "标准", "困难"};
+        int[] difDepths = {1, 3, 5};
+        GButton[] difBtns = new GButton[difficulties.length];
+        int curDepth = Profile.get().aiDefaultDepth;
         for (int i = 0; i < difficulties.length; i++) {
+            final int idx = i;
             String name = difficulties[i];
             GButton btn = GButton.secondary(name);
-            boolean isCurrent = (i == 1);
-            btn.setEnabled(!isCurrent);
-            btn.addActionListener(e -> GToast.info(rootPanel, "默认难度已设为：" + name));
+            btn.setEnabled(difDepths[i] != curDepth);
+            btn.addActionListener(e -> {
+                Profile.get().aiDefaultDepth = difDepths[idx];
+                Profile.get().save();
+                for (int j = 0; j < difBtns.length; j++) difBtns[j].setEnabled(j != idx);
+                GToast.info(rootPanel, "默认难度已设为：" + name);
+            });
+            difBtns[i] = btn;
             difRow.add(btn);
         }
         difRow.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -200,8 +220,23 @@ public class SettingsScene implements Scene {
         inviteLbl.setFont(t.fontBody);
         inviteLbl.setForeground(t.fgMuted);
         GTextField inviteField = new GTextField();
-        inviteField.setText("300");
+        inviteField.setText(String.valueOf(Profile.get().inviteSeconds));
         inviteField.setPreferredSize(new Dimension(120, 32));
+        inviteField.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusLost(java.awt.event.FocusEvent e) {
+                String txt = inviteField.getText().trim();
+                try {
+                    int sec = Integer.parseInt(txt);
+                    if (sec < 30 || sec > 3600) throw new NumberFormatException();
+                    Profile.get().inviteSeconds = sec;
+                    Profile.get().save();
+                    GToast.info(rootPanel, "邀请用时已保存：" + sec + " 秒");
+                } catch (NumberFormatException nfe) {
+                    GToast.error(rootPanel, "请输入 30-3600 之间的整数");
+                    inviteField.setText(String.valueOf(Profile.get().inviteSeconds));
+                }
+            }
+        });
         inviteRow.add(inviteLbl);
         inviteRow.add(inviteField);
         inviteRow.setAlignmentX(Component.LEFT_ALIGNMENT);

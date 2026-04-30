@@ -36,6 +36,11 @@ public class Profile {
 	public String lastCheckinDate = "";
 	public int  consecutiveCheckinDays = 0;
 
+	// === 设置项 ===
+	public String fontFamily = "default";
+	public int    aiDefaultDepth = 3;
+	public int    inviteSeconds = 300;
+
 	public int totalGames() { return aiWins + aiLosses + onlineWins + onlineLosses; }
 
 	public int winRate() {
@@ -102,6 +107,9 @@ public class Profile {
 		p.coins                  = parseInt(props, "coins", 0);
 		p.lastCheckinDate        = props.getProperty("lastCheckinDate", "");
 		p.consecutiveCheckinDays = parseInt(props, "consecutiveCheckinDays", 0);
+		p.fontFamily             = props.getProperty("fontFamily", "default");
+		p.aiDefaultDepth         = parseInt(props, "aiDefaultDepth", 3);
+		p.inviteSeconds          = parseInt(props, "inviteSeconds", 300);
 		return p;
 	}
 
@@ -135,6 +143,9 @@ public class Profile {
 		props.setProperty("coins", String.valueOf(coins));
 		props.setProperty("lastCheckinDate", lastCheckinDate == null ? "" : lastCheckinDate);
 		props.setProperty("consecutiveCheckinDays", String.valueOf(consecutiveCheckinDays));
+		props.setProperty("fontFamily", fontFamily == null ? "default" : fontFamily);
+		props.setProperty("aiDefaultDepth", String.valueOf(aiDefaultDepth));
+		props.setProperty("inviteSeconds", String.valueOf(inviteSeconds));
 		try (FileOutputStream out = new FileOutputStream(file())) {
 			props.store(out, "Gomoku player profile");
 		} catch (IOException ignored) {}

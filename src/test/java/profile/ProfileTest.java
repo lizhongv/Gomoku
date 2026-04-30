@@ -35,6 +35,9 @@ public class ProfileTest {
         p.unlockedSkinIds = "classic,darkwood";
         p.consecutiveCheckinDays = 5;
         p.avatarPath = "/tmp/avatar.png";
+        p.fontFamily = "microsoft_yahei";
+        p.aiDefaultDepth = 5;
+        p.inviteSeconds = 600;
         p.save();
 
         resetSingleton();
@@ -47,6 +50,9 @@ public class ProfileTest {
         eq("unlockedSkins round-trip", "classic,darkwood", loaded.unlockedSkinIds);
         eq("checkin days", "5", String.valueOf(loaded.consecutiveCheckinDays));
         eq("avatarPath round-trip", "/tmp/avatar.png", loaded.avatarPath);
+        eq("fontFamily round-trip", "microsoft_yahei", loaded.fontFamily);
+        eq("aiDefaultDepth round-trip", "5", String.valueOf(loaded.aiDefaultDepth));
+        eq("inviteSeconds round-trip", "600", String.valueOf(loaded.inviteSeconds));
     }
 
     static void testLoadOldProfileFillsDefaults() throws Exception {
@@ -67,6 +73,9 @@ public class ProfileTest {
         eq("新字段默认 coins=0", "0", String.valueOf(loaded.coins));
         eq("新字段默认 skinId=classic", "classic", loaded.skinId);
         eq("新字段默认 avatarPath=空", "", loaded.avatarPath);
+        eq("新字段默认 fontFamily=default", "default", loaded.fontFamily);
+        eq("新字段默认 aiDefaultDepth=3", "3", String.valueOf(loaded.aiDefaultDepth));
+        eq("新字段默认 inviteSeconds=300", "300", String.valueOf(loaded.inviteSeconds));
     }
 
     static void resetSingleton() throws Exception {
