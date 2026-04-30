@@ -1,0 +1,32 @@
+# Gomoku 全局配置
+# 复制为 config.properties（工作目录）或 ~/.gomoku/config.properties（用户级）
+# 客户端会自动监测并加载，未列出的键使用内置默认值
+
+# === 数据库（仅服务端需要） ===
+db.url=jdbc:mysql://localhost:3306/fiveChess
+db.user=root
+db.password=12345678
+
+# === 网络 ===
+server.port=4801
+server.host=127.0.0.1
+tls.enabled=false
+
+# === 棋盘 ===
+game.boardRows=14
+game.boardCols=14
+game.defaultTimeSec=300
+game.inviteTimeoutSec=100
+
+# === AI ===
+# 深度 1-5，默认 3。每 +1 棋力提升明显但单步耗时近 ×5
+ai.depth=3
+# 每层展开的候选位数，默认 10
+ai.samples=10
+# AI 落子前最少思考时间（毫秒），让玩家"看见"思考过程
+ai.thinkDelayMs=300
+
+# === 界面 ===
+# light 或 dark
+ui.theme=light
+ui.sound=true
