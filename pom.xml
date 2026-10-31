@@ -39,6 +39,7 @@
         <module>gomoku-core</module>
         <module>gomoku-ai</module>
         <module>gomoku-legacy</module>
+        <module>gomoku-benchmark</module>
     </modules>
 
     <properties>
