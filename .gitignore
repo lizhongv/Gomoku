@@ -1,23 +1,37 @@
+# 构建产物
 target/
 out/
-.idea/
-.claude/
-*.iml
 *.class
 
-# 打包产物
-target/installer/
-target/jpackage-input/
+# IDE 与本地工具
+.idea/
+*.iml
+.claude/
+.superpowers/
+.vscode/
+
+# 运行时配置与数据（可能含数据库密码）
+config.properties
+db.properties
+**/config.properties
+**/db.properties
+gomoku-legacy/manuals/*.fiv
+*.db
+*.db-wal
+*.db-shm
+
+# 安装包与归档
 *.zip
 *.msi
 *.exe
+*.dmg
+*.deb
+*.rpm
 
-# 数据库密码（复制 db.properties.example 后改名为 db.properties）
-db.properties
+# 日志与崩溃转储
+*.log
+*.hprof
 
-# 运行时棋谱产物
-manuals/*.fiv
-
-# 旧版残留（保留 .gitkeep 占位）
-img/*.fiv
-.superpowers/
+# 系统文件
+.DS_Store
+Thumbs.db
