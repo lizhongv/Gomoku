@@ -113,6 +113,7 @@ Gomoku/
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | 联机协议 v2：帧格式、消息表、错误码与权威性 |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | 服务端部署、数据备份与桌面打包 |
 | [docs/COMPETITORS.md](docs/COMPETITORS.md) | 竞品功能矩阵与差距 |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 路线图与待办（v2.1 / v2.2 / v2.3、技术债） |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更 |
 
 ## 路线图
