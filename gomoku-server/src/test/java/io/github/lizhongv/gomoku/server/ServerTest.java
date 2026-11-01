@@ -127,7 +127,11 @@ class ServerTest {
     alice.call(Message.of(Types.MOVE, "row", 7, "col", 7));
     bob.expect(Types.STATE);
     bob.call(Message.of(Types.MOVE, "row", 8, "col", 8));
-    alice.expect(Types.STATE);
+    // STATE 是广播消息，可能重复；读到包含两手的局面为止
+    bob.expectMoves(2);
+    alice.expectMoves(2);
+    // 给服务端一个确定的顺序点，避免关闭连接与服务端处理落子竞争
+    bob.call(Message.of(Types.PING));
     bob.close();
 
     try (Client again = new Client(server.port())) {
@@ -214,6 +218,17 @@ class ServerTest {
       output.write((Codec.encode(message) + "\n").getBytes(StandardCharsets.UTF_8));
       output.flush();
       return read();
+    }
+
+    /** 读到指定手数的 STATE；跳过其他广播。 */
+    Message expectMoves(int moves) throws IOException {
+      for (int i = 0; i < 50; i++) {
+        Message message = read();
+        if (message.type().equals(Types.STATE) && message.list("moves").size() == moves) {
+          return message;
+        }
+      }
+      throw new AssertionError("没有收到 " + moves + " 手的局面");
     }
 
     Message expect(String type) throws IOException {
