@@ -6,10 +6,13 @@
 
 **自研规则内核 · 12 档搜索 AI · JavaFX 桌面端 · 服务端权威联机**
 
+**Java 17 · JavaFX 21 · Maven · JUnit 5 · TCP 联机 · MIT**
+
 [![CI](https://github.com/lizhongv/Gomoku/actions/workflows/ci.yml/badge.svg)](https://github.com/lizhongv/Gomoku/actions/workflows/ci.yml)
 [![Package](https://github.com/lizhongv/Gomoku/actions/workflows/package.yml/badge.svg)](https://github.com/lizhongv/Gomoku/actions/workflows/package.yml)
 ![Java](https://img.shields.io/badge/Java-17%2B-orange)
 ![JavaFX](https://img.shields.io/badge/JavaFX-21-blue)
+![Tests](https://img.shields.io/badge/tests-57-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 [功能](#功能) · [截图](#截图) · [快速开始](#快速开始) · [架构](#架构) · [AI 设计](#ai-设计) · [文档](#文档) · [路线图](#路线图)
