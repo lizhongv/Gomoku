@@ -1,5 +1,6 @@
 package io.github.lizhongv.gomoku.desktop;
 
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,30 +25,37 @@ public final class SoundPlayer implements AutoCloseable {
     this.enabled = enabled;
   }
 
-  /** 播放一个音效；不存在或解码失败时忽略。 */
+  /** 播放一个音效：优先用内置资源，其次用户目录；都没有时静默。 */
   public void play(String name) {
     if (!enabled) {
       return;
     }
+    InputStream stream = SoundPlayer.class.getResourceAsStream("/sounds/" + name + ".wav");
     Path path = AppContext.dataDir().resolve("sounds").resolve(name + ".wav");
-    if (!Files.exists(path)) {
-      return;
-    }
-    try (AudioInputStream in = AudioSystem.getAudioInputStream(path.toFile())) {
-      Clip clip = AudioSystem.getClip();
-      clip.open(in);
-      clip.start();
-      clips.add(clip);
-      // 播放完成后回收，避免长期运行累积
-      clip.addLineListener(
-          event -> {
-            if (event.getType() == javax.sound.sampled.LineEvent.Type.STOP) {
-              clip.close();
-              clips.remove(clip);
-            }
-          });
+    try {
+      if (stream == null) {
+        if (!Files.exists(path)) {
+          return;
+        }
+        stream = Files.newInputStream(path);
+      }
+      try (InputStream raw = stream;
+          AudioInputStream in = AudioSystem.getAudioInputStream(raw)) {
+        Clip clip = AudioSystem.getClip();
+        clip.open(in);
+        clip.start();
+        clips.add(clip);
+        // 播放完成后回收，避免长期运行累积
+        clip.addLineListener(
+            event -> {
+              if (event.getType() == javax.sound.sampled.LineEvent.Type.STOP) {
+                clip.close();
+                clips.remove(clip);
+              }
+            });
+      }
     } catch (Exception ignored) {
-      // 没有音效资源时保持静音，不影响对局
+      // 解码失败时保持静音，不影响对局
     }
   }
 

@@ -45,6 +45,8 @@ final class Room {
 
   private long lastActivity = System.currentTimeMillis();
 
+  private java.util.concurrent.ScheduledFuture<?> turnTimer;
+
   Room(Server server, String id, ClientConnection black) {
     this.server = server;
     this.id = id;
@@ -87,6 +89,7 @@ final class Room {
     broadcast(startMessage());
     broadcast(stateMessage());
     server.roomStarted(this);
+    scheduleTurn();
     return true;
   }
 
@@ -116,6 +119,7 @@ final class Room {
       finish(game.result(), "five");
       return;
     }
+    scheduleTurn();
     broadcast(stateMessage());
   }
 
@@ -213,10 +217,48 @@ final class Room {
 
   private void finish(GameResult result, String reason) {
     status = Status.FINISHED;
-    Message over = Message.of(Types.GAME_OVER, "result", result.name(), "reason", reason);
-    broadcast(over);
-    server.recordGame(this, moves, result);
+    cancelTurnTimer();
+    java.util.Map<String, Integer> ratings = server.recordGame(this, moves, result);
+    sendTo(black, gameOver(result, reason, ratings.get(blackName)));
+    sendTo(white, gameOver(result, reason, ratings.get(whiteName)));
     server.dropRoom(this);
+  }
+
+  private Message gameOver(GameResult result, String reason, Integer rating) {
+    return Message.of(
+        Types.GAME_OVER,
+        "result",
+        result.name(),
+        "reason",
+        reason,
+        "rating",
+        rating == null ? 0 : rating);
+  }
+
+  private void sendTo(ClientConnection connection, Message message) {
+    if (connection != null) {
+      connection.send(message);
+    }
+  }
+
+  /** 每手超时：当前行棋方判负。 */
+  synchronized void turnTimeout() {
+    if (status != Status.PLAYING) {
+      return;
+    }
+    finish(game.turn() == Stone.BLACK ? GameResult.WHITE_WIN : GameResult.BLACK_WIN, "timeout");
+  }
+
+  private void scheduleTurn() {
+    cancelTurnTimer();
+    turnTimer = server.scheduleTurn(this, server.turnSeconds());
+  }
+
+  private void cancelTurnTimer() {
+    if (turnTimer != null) {
+      turnTimer.cancel(false);
+      turnTimer = null;
+    }
   }
 
   private Message startMessage() {

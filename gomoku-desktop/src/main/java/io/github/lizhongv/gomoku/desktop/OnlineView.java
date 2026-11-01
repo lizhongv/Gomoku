@@ -75,6 +75,8 @@ public final class OnlineView extends BorderPane {
 
   private boolean finished;
 
+  private int rating = 1200;
+
   /** 创建联机页。 */
   public OnlineView(AppShell shell) {
     this.shell = shell;
@@ -135,6 +137,10 @@ public final class OnlineView extends BorderPane {
           }
         });
 
+    Button quick = new Button(i18n.t("online.quick"));
+    quick.getStyleClass().add("secondary-button");
+    quick.setOnAction(event -> send(Message.of(Types.QUICK_MATCH)));
+
     lobby
         .getChildren()
         .addAll(
@@ -143,7 +149,7 @@ public final class OnlineView extends BorderPane {
             authRow,
             new Label(i18n.t("online.rooms")),
             rooms,
-            new HBox(8, refresh, create, join));
+            new HBox(8, refresh, quick, create, join));
     lobby.setPadding(new Insets(8, 0, 0, 0));
   }
 
@@ -232,7 +238,8 @@ public final class OnlineView extends BorderPane {
   private void onMessage(Message message) {
     switch (message.type()) {
       case Types.LOGGED_IN -> {
-        status.setText(i18n.t("online.connected", message.text("display")));
+        rating = message.integer("rating", 1200);
+        status.setText(i18n.t("online.connected", message.text("display"), rating));
         send(Message.of(Types.LIST_ROOMS));
         showLobby();
       }
@@ -254,7 +261,9 @@ public final class OnlineView extends BorderPane {
       case Types.CHAT -> chat.appendText(message.text("from") + "：" + message.text("text") + "\n");
       case Types.GAME_OVER -> {
         finished = true;
-        status.setText(i18n.t("online.over", message.text("result"), message.text("reason")));
+        rating = message.integer("rating", rating);
+        status.setText(
+            i18n.t("online.over", message.text("result"), message.text("reason"), rating));
         resign.setDisable(true);
       }
       case Types.OPPONENT_LEFT -> status.setText(i18n.t("online.opponentLeft"));

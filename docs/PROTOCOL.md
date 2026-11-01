@@ -18,11 +18,12 @@
 | `welcome` | S→C | `version`、`server` | 握手成功 |
 | `register` | C→S | `username`、`password`、`display` | 注册并登录 |
 | `login` | C→S | `username`、`password` | 登录 |
-| `logged_in` | S→C | `token`、`name`、`display`、`wins`、`losses` | 登录成功；token 用于断线重连 |
+| `logged_in` | S→C | `token`、`name`、`display`、`wins`、`losses`、`rating` | 登录成功；token 用于断线重连 |
 | `reconnect` | C→S | `token` | 重连并恢复房间 |
 | `list_rooms` | C→S | — | 列出等待中的房间 |
 | `rooms` | S→C | `rooms: [{id, black, white}]` | 房间列表 |
 | `create_room` | C→S | — | 创建房间，创建者为黑 |
+| `quick_match` | C→S | — | 快速匹配：加入最早的等待房间，没有则新建 |
 | `join_room` | C→S | `room` | 加入房间，加入者为白 |
 | `room_joined` | S→C | `room`、`color`、`opponent` | 已进入房间 |
 | `game_start` | S→C | `room`、`black`、`white` | 双方到齐 |
@@ -31,7 +32,7 @@
 | `chat` | 双向 | `from`、`text` | 房间内聊天，最多 200 字 |
 | `resign` | C→S | — | 认输 |
 | `leave` | C→S | — | 离开房间 |
-| `game_over` | S→C | `result`、`reason` | 结果；reason 为 `five`、`resign`、`leave`、`timeout` |
+| `game_over` | S→C | `result`、`reason`、`rating` | 结果与本人新积分；reason 为 `five`、`resign`、`leave`、`timeout` |
 | `opponent_left` | S→C | `grace` | 对手断线，宽限秒数 |
 | `ping` / `pong` | 双向 | — | 心跳 |
 | `error` | S→C | `code`、`message` | 错误 |
@@ -42,6 +43,8 @@
 - 客户端**没有**「宣布胜利」的消息；胜负只由服务端根据落子判定。
 - 非法消息返回 `error`，不改变棋局；同一连接每秒最多 40 条消息。
 - 断线保留座位 `GOMOKU_RECONNECT_SECONDS`（默认 60 秒），期间用 token 重连恢复；超时判负。
+- 每手限时 `GOMOKU_TURN_SECONDS`（默认 60 秒），超时由服务端判当前行棋方负，reason 为 `timeout`。
+- 结束后按 ELO（K=32，初始 1200）更新双方积分，并在 `game_over.rating` 中返回本人新积分。
 - 对局结束写入 `games.jsonl`，并更新账号胜负。
 
 ## 四、错误码

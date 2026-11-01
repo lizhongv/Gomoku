@@ -78,6 +78,23 @@ class ServerTest {
       assertThat(over.type()).isEqualTo(Types.GAME_OVER);
       assertThat(over.text("result")).isEqualTo("BLACK_WIN");
       assertThat(over.text("reason")).isEqualTo("five");
+      assertThat(over.integer("rating", 0)).isGreaterThan(1200);
+    }
+  }
+
+  @Test
+  void quickMatchPairsWaitingPlayers() throws Exception {
+    try (Client alice = new Client(server.port());
+        Client bob = new Client(server.port())) {
+      login(alice, "quick1");
+      login(bob, "quick2");
+      Message first = alice.call(Message.of(Types.QUICK_MATCH));
+      assertThat(first.type()).isEqualTo(Types.ROOM_JOINED);
+      Message second = bob.call(Message.of(Types.QUICK_MATCH));
+      assertThat(second.type()).isEqualTo(Types.ROOM_JOINED);
+      assertThat(second.text("room")).isEqualTo(first.text("room"));
+      alice.expect(Types.GAME_START);
+      bob.expect(Types.GAME_START);
     }
   }
 

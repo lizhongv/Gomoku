@@ -1,6 +1,7 @@
 package io.github.lizhongv.gomoku.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.lizhongv.gomoku.core.GameResult;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -35,8 +36,15 @@ final class UserStore {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  /** 账号。 */
-  record User(String name, String display, String salt, String hash, int wins, int losses) {}
+  /** 账号。rating 缺失（旧数据）时按 1200 处理。 */
+  record User(
+      String name, String display, String salt, String hash, int wins, int losses, int rating) {
+    User {
+      if (rating <= 0) {
+        rating = 1200;
+      }
+    }
+  }
 
   private final Path file;
 
@@ -68,7 +76,8 @@ final class UserStore {
             Base64.getEncoder().encodeToString(salt),
             hash(password, salt),
             0,
-            0);
+            0,
+            1200);
     users.put(key, user);
     persist();
     return user;
@@ -91,22 +100,42 @@ final class UserStore {
     return users.get(normalize(name));
   }
 
-  /** 记录胜负。 */
-  synchronized void recordResult(String name, boolean win) {
-    User user = users.get(normalize(name));
-    if (user == null) {
-      return;
+  /** 按 ELO 记录一局结果，返回双方的新积分。 */
+  synchronized Map<String, Integer> recordGame(
+      String blackName, String whiteName, GameResult result) {
+    User black = users.get(normalize(blackName));
+    User white = users.get(normalize(whiteName));
+    if (black == null || white == null) {
+      return Map.of();
     }
+    double scoreBlack =
+        result == GameResult.BLACK_WIN ? 1.0 : (result == GameResult.DRAW ? 0.5 : 0.0);
+    double expectedBlack = 1.0 / (1.0 + Math.pow(10.0, (white.rating() - black.rating()) / 400.0));
+    int delta = (int) Math.round(32 * (scoreBlack - expectedBlack));
+    int blackRating = Math.max(100, black.rating() + delta);
+    int whiteRating = Math.max(100, white.rating() - delta);
     users.put(
-        user.name(),
+        black.name(),
         new User(
-            user.name(),
-            user.display(),
-            user.salt(),
-            user.hash(),
-            user.wins() + (win ? 1 : 0),
-            user.losses() + (win ? 0 : 1)));
+            black.name(),
+            black.display(),
+            black.salt(),
+            black.hash(),
+            black.wins() + (result == GameResult.BLACK_WIN ? 1 : 0),
+            black.losses() + (result == GameResult.WHITE_WIN ? 1 : 0),
+            blackRating));
+    users.put(
+        white.name(),
+        new User(
+            white.name(),
+            white.display(),
+            white.salt(),
+            white.hash(),
+            white.wins() + (result == GameResult.WHITE_WIN ? 1 : 0),
+            white.losses() + (result == GameResult.BLACK_WIN ? 1 : 0),
+            whiteRating));
     persist();
+    return Map.of(black.name(), blackRating, white.name(), whiteRating);
   }
 
   private static String hash(String password, byte[] salt) {

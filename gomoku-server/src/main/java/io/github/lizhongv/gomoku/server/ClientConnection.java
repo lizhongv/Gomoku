@@ -124,6 +124,7 @@ final class ClientConnection implements Runnable, AutoCloseable {
       case Types.RECONNECT -> reconnect(message);
       case Types.LIST_ROOMS -> send(server.roomList());
       case Types.CREATE_ROOM -> createRoom();
+      case Types.QUICK_MATCH -> quickMatch();
       case Types.JOIN_ROOM -> joinRoom(message);
       case Types.MOVE -> move(message);
       case Types.CHAT -> chat(message);
@@ -193,7 +194,9 @@ final class ClientConnection implements Runnable, AutoCloseable {
             "wins",
             user.wins(),
             "losses",
-            user.losses()));
+            user.losses(),
+            "rating",
+            user.rating()));
   }
 
   private void reconnect(Message message) {
@@ -221,8 +224,17 @@ final class ClientConnection implements Runnable, AutoCloseable {
             "wins",
             user.wins(),
             "losses",
-            user.losses()));
+            user.losses(),
+            "rating",
+            user.rating()));
     server.restoreRoom(this);
+  }
+
+  private void quickMatch() {
+    if (!requireLogin()) {
+      return;
+    }
+    server.quickMatch(this);
   }
 
   private void createRoom() {

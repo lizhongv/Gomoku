@@ -13,6 +13,7 @@ public final class Types {
   public static final String LIST_ROOMS = "list_rooms";
   public static final String ROOMS = "rooms";
   public static final String CREATE_ROOM = "create_room";
+  public static final String QUICK_MATCH = "quick_match";
   public static final String JOIN_ROOM = "join_room";
   public static final String ROOM_JOINED = "room_joined";
   public static final String GAME_START = "game_start";

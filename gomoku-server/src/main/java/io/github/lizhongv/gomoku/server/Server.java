@@ -35,6 +35,8 @@ public final class Server implements AutoCloseable {
 
   private final int reconnectSeconds;
 
+  private final int turnSeconds;
+
   private final UserStore users;
 
   private final GameStore games;
@@ -73,7 +75,13 @@ public final class Server implements AutoCloseable {
 
   /** 启动服务端；端口传 0 时由系统分配。 */
   public Server(int port, Path dataDir, int reconnectSeconds) throws IOException {
+    this(port, dataDir, reconnectSeconds, 60);
+  }
+
+  /** 指定断线宽限与每手超时秒数。 */
+  public Server(int port, Path dataDir, int reconnectSeconds, int turnSeconds) throws IOException {
     this.reconnectSeconds = reconnectSeconds;
+    this.turnSeconds = Math.max(5, turnSeconds);
     this.users = new UserStore(dataDir);
     this.games = new GameStore(dataDir);
     this.serverSocket = new ServerSocket(port);
@@ -91,6 +99,11 @@ public final class Server implements AutoCloseable {
   /** 断线重连宽限秒数。 */
   int reconnectSeconds() {
     return reconnectSeconds;
+  }
+
+  /** 每手超时秒数。 */
+  int turnSeconds() {
+    return turnSeconds;
   }
 
   UserStore.User register(String username, String password, String display) {
@@ -177,15 +190,25 @@ public final class Server implements AutoCloseable {
     }
   }
 
-  void recordGame(Room room, List<Move> moves, GameResult result) {
+  Map<String, Integer> recordGame(Room room, List<Move> moves, GameResult result) {
     games.append(room.id(), room.blackName(), room.whiteName(), moves, result);
-    if (result == GameResult.BLACK_WIN) {
-      users.recordResult(room.blackName(), true);
-      users.recordResult(room.whiteName(), false);
-    } else if (result == GameResult.WHITE_WIN) {
-      users.recordResult(room.blackName(), false);
-      users.recordResult(room.whiteName(), true);
+    return users.recordGame(room.blackName(), room.whiteName(), result);
+  }
+
+  /** 快速匹配：加入最早的空房间，没有则新建。 */
+  void quickMatch(ClientConnection connection) {
+    for (Room room : rooms.values()) {
+      if (room.status() == Room.Status.WAITING
+          && !room.blackName().equals(connection.user().name())) {
+        joinRoom(connection, room.id());
+        return;
+      }
     }
+    createRoom(connection);
+  }
+
+  java.util.concurrent.ScheduledFuture<?> scheduleTurn(Room room, int seconds) {
+    return scheduler.schedule(room::turnTimeout, seconds, TimeUnit.SECONDS);
   }
 
   void dropRoom(Room room) {

@@ -22,6 +22,7 @@ java -jar gomoku-server/target/gomoku-server.jar
 | `GOMOKU_PORT` | `4802` | 监听端口；`0` 由系统分配（测试用） |
 | `GOMOKU_DATA` | `~/.gomoku-server` | 账号、对局记录目录 |
 | `GOMOKU_RECONNECT_SECONDS` | `60` | 断线重连宽限秒数，超时判负 |
+| `GOMOKU_TURN_SECONDS` | `60` | 每手限时秒数，超时判当前行棋方负 |
 
 数据文件：
 
