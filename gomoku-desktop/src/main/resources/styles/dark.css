@@ -1,11 +1,15 @@
 .root {
-    -g-bg: #14161A;
-    -g-surface: #1D2026;
-    -g-text: #E8EAF0;
-    -g-muted: #9AA3B2;
-    -g-accent: #4C8DFF;
-    -g-accent-hover: #3B78E0;
-    -g-border: #2C313A;
-    -g-hover: #262B33;
-    -g-board-bg: #101216;
+    -g-bg: #0F1115;
+    -g-bg-2: #0A0C10;
+    -g-surface: #181B21;
+    -g-surface-2: #1F232B;
+    -g-text: #E9ECF2;
+    -g-muted: #98A2B3;
+    -g-accent: #6EA8FE;
+    -g-accent-hover: #4C8DFF;
+    -g-accent-soft: #1D2A44;
+    -g-border: #2A2F39;
+    -g-hover: #232833;
+    -g-board-bg: #151922;
+    -g-board-bg-2: #10131A;
 }

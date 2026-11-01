@@ -54,7 +54,9 @@ public final class ReviewView extends BorderPane {
         .valueProperty()
         .addListener((observable, oldValue, newValue) -> show(newValue.intValue()));
 
-    Button first = navButton("review.first", 0);
+    Button first = new Button(i18n.t("review.first"));
+    first.getStyleClass().add("secondary-button");
+    first.setOnAction(event -> slider.setValue(moves.isEmpty() ? 0 : 1));
     Button previous = navButton("review.previous", -1);
     Button next = navButton("review.next", 1);
     Button last = navButton("review.last", moves.size());

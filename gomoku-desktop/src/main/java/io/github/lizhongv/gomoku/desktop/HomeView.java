@@ -67,9 +67,14 @@ public final class HomeView extends VBox {
     HBox actions = new HBox(12, start, resume, review);
     actions.setAlignment(Pos.CENTER_LEFT);
 
-    Label stats =
-        new Label(i18n.t("home.stats", context.wins(), context.losses(), context.draws()));
-    stats.getStyleClass().add("stats-line");
+    Label badge = new Label(i18n.t("home.badge"));
+    badge.getStyleClass().add("badge");
+    HBox stats =
+        new HBox(
+            10,
+            statCard(i18n.t("home.wins"), context.wins()),
+            statCard(i18n.t("home.losses"), context.losses()),
+            statCard(i18n.t("home.draws"), context.draws()));
 
     Region spacer = new Region();
     VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -77,7 +82,7 @@ public final class HomeView extends VBox {
     VBox levelRow = new VBox(6, new Label(i18n.t("home.level")), levels, levelHint);
     levelRow.getStyleClass().add("field-group");
 
-    VBox hero = new VBox(12, title, subtitle, levelRow, actions, stats);
+    VBox hero = new VBox(12, badge, title, subtitle, levelRow, actions, stats);
     hero.getStyleClass().add("hero-card");
     hero.setPadding(new Insets(32));
     hero.setMaxWidth(640);
@@ -102,5 +107,16 @@ public final class HomeView extends VBox {
     HBox.setHgrow(hero, Priority.ALWAYS);
 
     getChildren().addAll(body, spacer);
+  }
+
+  private VBox statCard(String label, int value) {
+    Label number = new Label(String.valueOf(value));
+    number.getStyleClass().add("stat-value");
+    Label caption = new Label(label);
+    caption.getStyleClass().add("stat-label");
+    VBox card = new VBox(2, number, caption);
+    card.getStyleClass().add("stat-card");
+    card.setAlignment(Pos.CENTER_LEFT);
+    return card;
   }
 }
