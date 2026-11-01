@@ -4,6 +4,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 TARGET="$PWD/docs/images/desktop"
 mkdir -p "$TARGET"
-./mvnw -q -pl gomoku-core,gomoku-ai,gomoku-protocol -am install -DskipTests
-./mvnw -q -pl gomoku-desktop javafx:run "-Djavafx.args=--screenshot=$TARGET"
+bash mvnw -q -pl gomoku-core,gomoku-ai,gomoku-protocol -am install -DskipTests
+bash mvnw -q -pl gomoku-desktop javafx:run "-Djavafx.args=--screenshot=$TARGET"
 echo "截图已输出到 $TARGET"

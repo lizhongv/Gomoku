@@ -3,5 +3,5 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-./mvnw -q -pl gomoku-core,gomoku-ai,gomoku-protocol -am install -DskipTests
-./mvnw -q -pl gomoku-desktop javafx:run
+bash mvnw -q -pl gomoku-core,gomoku-ai,gomoku-protocol -am install -DskipTests
+bash mvnw -q -pl gomoku-desktop javafx:run

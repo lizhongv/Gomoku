@@ -11,11 +11,11 @@ VERSION="${VERSION:-2.0.0}"
 OUT="target/package"
 INPUT="$OUT/input"
 
-./mvnw -q -pl gomoku-desktop -am package -DskipTests
+bash mvnw -q -pl gomoku-desktop -am package -DskipTests
 rm -rf "$INPUT" "$OUT/Gomoku"
 mkdir -p "$INPUT/lib"
 cp gomoku-desktop/target/gomoku-desktop-*.jar "$INPUT/"
-./mvnw -q -pl gomoku-desktop dependency:copy-dependencies \
+bash mvnw -q -pl gomoku-desktop dependency:copy-dependencies \
   -DincludeScope=runtime -DoutputDirectory="$(cd "$OUT/input/lib" && pwd)"
 
 JAR=$(basename "$(ls gomoku-desktop/target/gomoku-desktop-*.jar | head -1)")
