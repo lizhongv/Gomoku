@@ -140,10 +140,41 @@ class ServerTest {
     alice.close();
   }
 
+  @Test
+  void locksAccountAfterRepeatedFailures() throws Exception {
+    try (Client alice = new Client(server.port());
+        Client attacker = new Client(server.port())) {
+      login(alice, "lock1");
+      attacker.call(Message.of(Types.HELLO, "version", Codec.VERSION));
+      for (int attempt = 0; attempt < 5; attempt++) {
+        Message failed =
+            attacker.call(Message.of(Types.LOGIN, "username", "lock1", "password", "wrong-pass"));
+        assertThat(failed.text("code")).isEqualTo("LOGIN_FAILED");
+      }
+      Message locked =
+          attacker.call(Message.of(Types.LOGIN, "username", "lock1", "password", "password123"));
+      assertThat(locked.text("code")).isEqualTo("LOGIN_LOCKED");
+    }
+  }
+
   private String login(Client client, String name) throws IOException {
     client.call(Message.of(Types.HELLO, "version", Codec.VERSION));
+    Message challenge = client.call(Message.of(Types.CAPTCHA));
+    String question = challenge.text("question");
+    String[] parts = question.replace("=", "").replace("?", "").trim().split("\\s+");
+    int answer = Integer.parseInt(parts[0]) + Integer.parseInt(parts[2]);
     Message result =
-        client.call(Message.of(Types.REGISTER, "username", name, "password", "password123"));
+        client.call(
+            Message.of(
+                Types.REGISTER,
+                "username",
+                name,
+                "password",
+                "password123",
+                "captcha_id",
+                challenge.text("id"),
+                "captcha_answer",
+                answer));
     assertThat(result.type()).isEqualTo(Types.LOGGED_IN);
     return result.text("token");
   }

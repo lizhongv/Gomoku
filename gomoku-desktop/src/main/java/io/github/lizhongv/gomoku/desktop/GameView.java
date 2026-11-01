@@ -56,6 +56,8 @@ public final class GameView extends BorderPane {
 
   private final Label thinking = new Label();
 
+  private final Label coach = new Label();
+
   private final Timeline timer;
 
   private final PauseTransition hintClear = new PauseTransition(Duration.seconds(5));
@@ -84,6 +86,8 @@ public final class GameView extends BorderPane {
     timeLabel.getStyleClass().add("hint");
     movesLabel.getStyleClass().add("hint");
     thinking.getStyleClass().add("hint");
+    coach.getStyleClass().add("hint");
+    coach.setWrapText(true);
 
     undoButton = action("game.undo", this::undo);
     hintButton = action("game.hint", this::hint);
@@ -217,6 +221,11 @@ public final class GameView extends BorderPane {
     controller.hint(
         candidates -> {
           canvas.setHints(candidates.stream().map(Candidate::move).toList());
+          String advice =
+              candidates.stream()
+                  .map(candidate -> coordinate(candidate.move()) + " " + candidate.score())
+                  .collect(java.util.stream.Collectors.joining(" · "));
+          coach.setText(i18n.t("game.coach", advice));
           hintClear.playFromStart();
         });
   }

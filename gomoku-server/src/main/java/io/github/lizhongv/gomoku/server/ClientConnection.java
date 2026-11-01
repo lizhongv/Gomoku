@@ -119,6 +119,7 @@ final class ClientConnection implements Runnable, AutoCloseable {
   private void handle(Message message) {
     switch (message.type()) {
       case Types.HELLO -> hello(message);
+      case Types.CAPTCHA -> captcha();
       case Types.REGISTER -> register(message);
       case Types.LOGIN -> login(message);
       case Types.RECONNECT -> reconnect(message);
@@ -144,6 +145,11 @@ final class ClientConnection implements Runnable, AutoCloseable {
     send(Message.of(Types.WELCOME, "version", Codec.VERSION, "server", "gomoku-server"));
   }
 
+  private void captcha() {
+    Server.Captcha challenge = server.issueCaptcha();
+    send(Message.of(Types.CAPTCHA, "id", challenge.id(), "question", challenge.question()));
+  }
+
   private void register(Message message) {
     if (user != null) {
       error("ALREADY_LOGGED_IN", "已经登录");
@@ -152,7 +158,11 @@ final class ClientConnection implements Runnable, AutoCloseable {
     try {
       UserStore.User created =
           server.register(
-              message.text("username"), message.text("password"), message.text("display"));
+              message.text("username"),
+              message.text("password"),
+              message.text("display"),
+              message.text("captcha_id"),
+              message.integer("captcha_answer", -1));
       loggedIn(created, server.issueToken(created));
     } catch (IllegalArgumentException error) {
       error("REGISTER_FAILED", error.getMessage());
@@ -164,8 +174,13 @@ final class ClientConnection implements Runnable, AutoCloseable {
       error("ALREADY_LOGGED_IN", "已经登录");
       return;
     }
-    UserStore.User authenticated =
-        server.authenticate(message.text("username"), message.text("password"));
+    UserStore.User authenticated;
+    try {
+      authenticated = server.authenticate(message.text("username"), message.text("password"));
+    } catch (IllegalStateException locked) {
+      error("LOGIN_LOCKED", locked.getMessage());
+      return;
+    }
     if (authenticated == null) {
       error("LOGIN_FAILED", "账号或密码错误");
       return;

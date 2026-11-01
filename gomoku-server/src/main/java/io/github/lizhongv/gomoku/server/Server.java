@@ -7,6 +7,7 @@ import io.github.lizhongv.gomoku.protocol.Types;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -69,6 +70,10 @@ public final class Server implements AutoCloseable {
 
   private final Map<String, String> playerRoom = new ConcurrentHashMap<>();
 
+  private final Map<String, Captcha> captchas = new ConcurrentHashMap<>();
+
+  private final Map<String, Attempt> attempts = new ConcurrentHashMap<>();
+
   private final Thread acceptThread;
 
   private volatile boolean running = true;
@@ -84,7 +89,7 @@ public final class Server implements AutoCloseable {
     this.turnSeconds = Math.max(5, turnSeconds);
     this.users = new UserStore(dataDir);
     this.games = new GameStore(dataDir);
-    this.serverSocket = new ServerSocket(port);
+    this.serverSocket = createServerSocket(port);
     this.acceptThread = new Thread(this::acceptLoop, "gomoku-accept");
     this.acceptThread.setDaemon(true);
     this.acceptThread.start();
@@ -106,12 +111,80 @@ public final class Server implements AutoCloseable {
     return turnSeconds;
   }
 
-  UserStore.User register(String username, String password, String display) {
+  UserStore.User register(
+      String username, String password, String display, String captchaId, int captchaAnswer) {
+    Captcha challenge = captchas.remove(captchaId);
+    if (challenge == null
+        || challenge.expiresAt() < System.currentTimeMillis()
+        || challenge.answer() != captchaAnswer) {
+      throw new IllegalArgumentException("验证码错误或已过期");
+    }
     return users.register(username, password, display);
   }
 
+  /** 登录：连续失败 5 次锁定 5 分钟。 */
   UserStore.User authenticate(String username, String password) {
-    return users.authenticate(username, password);
+    String key = username == null ? "" : username.trim().toLowerCase(java.util.Locale.ROOT);
+    Attempt attempt = attempts.get(key);
+    long now = System.currentTimeMillis();
+    if (attempt != null && attempt.lockedUntil() > now) {
+      throw new IllegalStateException("尝试次数过多，请 5 分钟后再试");
+    }
+    UserStore.User user = users.authenticate(username, password);
+    if (user != null) {
+      attempts.remove(key);
+      return user;
+    }
+    int failures = attempt == null ? 1 : attempt.failures() + 1;
+    long lockedUntil = failures >= 5 ? now + 5 * 60_000L : 0;
+    attempts.put(key, new Attempt(failures, lockedUntil));
+    return null;
+  }
+
+  /** 生成一次性算术验证码，5 分钟内有效。 */
+  Captcha issueCaptcha() {
+    int left = 1 + RANDOM.nextInt(9);
+    int right = 1 + RANDOM.nextInt(9);
+    byte[] bytes = new byte[8];
+    RANDOM.nextBytes(bytes);
+    String id = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    Captcha captcha =
+        new Captcha(
+            id,
+            left + " + " + right + " = ?",
+            left + right,
+            System.currentTimeMillis() + 5 * 60_000L);
+    captchas.put(id, captcha);
+    return captcha;
+  }
+
+  /** 验证码。 */
+  record Captcha(String id, String question, int answer, long expiresAt) {}
+
+  private record Attempt(int failures, long lockedUntil) {}
+
+  private ServerSocket createServerSocket(int port) throws IOException {
+    String keystore = System.getenv("GOMOKU_TLS_KEYSTORE");
+    if (keystore == null || keystore.isBlank()) {
+      return new ServerSocket(port);
+    }
+    try {
+      String password = System.getenv().getOrDefault("GOMOKU_TLS_PASSWORD", "");
+      java.security.KeyStore store = java.security.KeyStore.getInstance("PKCS12");
+      try (java.io.InputStream in = Files.newInputStream(Path.of(keystore))) {
+        store.load(in, password.toCharArray());
+      }
+      javax.net.ssl.KeyManagerFactory factory =
+          javax.net.ssl.KeyManagerFactory.getInstance(
+              javax.net.ssl.KeyManagerFactory.getDefaultAlgorithm());
+      factory.init(store, password.toCharArray());
+      javax.net.ssl.SSLContext context = javax.net.ssl.SSLContext.getInstance("TLS");
+      context.init(factory.getKeyManagers(), null, null);
+      LOG.info("已启用 TLS：{}", keystore);
+      return context.getServerSocketFactory().createServerSocket(port);
+    } catch (Exception error) {
+      throw new IOException("TLS 密钥库加载失败：" + error.getMessage(), error);
+    }
   }
 
   /** 登录成功后签发 token；同一账号已在线时返回 null。 */

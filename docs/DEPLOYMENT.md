@@ -23,6 +23,8 @@ java -jar gomoku-server/target/gomoku-server.jar
 | `GOMOKU_DATA` | `~/.gomoku-server` | 账号、对局记录目录 |
 | `GOMOKU_RECONNECT_SECONDS` | `60` | 断线重连宽限秒数，超时判负 |
 | `GOMOKU_TURN_SECONDS` | `60` | 每手限时秒数，超时判当前行棋方负 |
+| `GOMOKU_TLS_KEYSTORE` | 无 | PKCS12 密钥库路径；设置后服务端启用 TLS |
+| `GOMOKU_TLS_PASSWORD` | 无 | 密钥库口令 |
 
 数据文件：
 
@@ -33,7 +35,8 @@ java -jar gomoku-server/target/gomoku-server.jar
 
 ### 运维建议
 
-- 默认无 TLS；对公网开放时置于 Nginx/HAProxy 的 TLS 之后，并限制来源。
+- 默认无 TLS；可直接用 `GOMOKU_TLS_KEYSTORE` 启用，或置于 Nginx/HAProxy 的 TLS 之后，并限制来源。
+- 注册需要算术验证码；登录连续失败 5 次锁定 5 分钟。
 - 服务端无状态管理后台，账号由客户端注册；生产环境应在注册处加验证码或邀请码（待补）。
 - 客户端断线会保留座位，服务端重启后房间丢失，需要重新开局。
 

@@ -103,6 +103,12 @@ public final class AppShell {
     content.getChildren().setAll(new ReviewView(this, moves, result));
   }
 
+  /** 残局。 */
+  public void showPuzzles() {
+    closeController();
+    content.getChildren().setAll(new PuzzleView(this));
+  }
+
   /** 联机。 */
   public void showOnline() {
     closeController();
@@ -141,6 +147,8 @@ public final class AppShell {
         gameView.dispose();
       } else if (content.getChildren().get(0) instanceof OnlineView onlineView) {
         onlineView.dispose();
+      } else if (content.getChildren().get(0) instanceof PuzzleView puzzleView) {
+        puzzleView.dispose();
       }
     }
     if (controller != null) {
@@ -153,12 +161,13 @@ public final class AppShell {
     brand.setText(context.i18n().t("app.title"));
     brand.getStyleClass().add("brand");
     Button home = navButton("nav.home", this::showHome);
+    Button puzzles = navButton("nav.puzzles", this::showPuzzles);
     Button online = navButton("nav.online", this::showOnline);
     Button settings = navButton("nav.settings", this::showSettings);
     Button about = navButton("nav.about", this::showAbout);
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
-    nav.getChildren().setAll(brand, spacer, home, online, settings, about);
+    nav.getChildren().setAll(brand, spacer, home, puzzles, online, settings, about);
     nav.getStyleClass().add("top-nav");
     nav.setAlignment(Pos.CENTER_LEFT);
     nav.setPadding(new Insets(12, 18, 12, 18));

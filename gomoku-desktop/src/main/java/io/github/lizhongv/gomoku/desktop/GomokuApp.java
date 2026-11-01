@@ -91,6 +91,13 @@ public final class GomokuApp extends Application {
         3800,
         () -> {
           save(stage, folder, "online");
+          shell.showPuzzles();
+        });
+    after(
+        stage,
+        4400,
+        () -> {
+          save(stage, folder, "puzzles");
           Platform.exit();
         });
   }

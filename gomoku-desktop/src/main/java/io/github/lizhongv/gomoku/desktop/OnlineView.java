@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
@@ -50,6 +51,14 @@ public final class OnlineView extends BorderPane {
   private final TextField username = new TextField();
 
   private final PasswordField password = new PasswordField();
+
+  private final Label captchaQuestion = new Label();
+
+  private final TextField captchaAnswer = new TextField();
+
+  private final CheckBox tls = new CheckBox("TLS");
+
+  private String captchaId = "";
 
   private final ListView<String> rooms = new ListView<>();
 
@@ -111,6 +120,12 @@ public final class OnlineView extends BorderPane {
     form.add(username, 1, 1);
     form.add(new Label(i18n.t("online.password")), 2, 1);
     form.add(password, 3, 1);
+    Button getCaptcha = new Button(i18n.t("online.captchaGet"));
+    getCaptcha.getStyleClass().add("secondary-button");
+    getCaptcha.setOnAction(event -> send(Message.of(Types.CAPTCHA)));
+    form.add(new Label(i18n.t("online.captcha")), 0, 2);
+    form.add(new HBox(8, captchaQuestion, captchaAnswer, getCaptcha), 1, 2, 3, 1);
+    form.add(tls, 1, 3);
 
     Button login = new Button(i18n.t("online.login"));
     login.getStyleClass().add("primary-button");
@@ -200,6 +215,11 @@ public final class OnlineView extends BorderPane {
   }
 
   private void authenticate(boolean register) {
+    if (register && captchaId.isBlank()) {
+      status.setText(i18n.t("online.captchaRequired"));
+      send(Message.of(Types.CAPTCHA));
+      return;
+    }
     try {
       if (client == null || !client.running()) {
         int serverPort;
@@ -210,7 +230,12 @@ public final class OnlineView extends BorderPane {
           return;
         }
         client =
-            new OnlineClient(host.getText().trim(), serverPort, this::onMessage, this::onClosed);
+            new OnlineClient(
+                host.getText().trim(),
+                serverPort,
+                tls.isSelected(),
+                this::onMessage,
+                this::onClosed);
         send(Message.of(Types.HELLO, "version", Codec.VERSION));
       }
       Message message =
@@ -222,7 +247,11 @@ public final class OnlineView extends BorderPane {
                   "password",
                   password.getText(),
                   "display",
-                  username.getText().trim())
+                  username.getText().trim(),
+                  "captcha_id",
+                  captchaId,
+                  "captcha_answer",
+                  captchaAnswer.getText().trim())
               : Message.of(
                   Types.LOGIN,
                   "username",
@@ -242,6 +271,10 @@ public final class OnlineView extends BorderPane {
         status.setText(i18n.t("online.connected", message.text("display"), rating));
         send(Message.of(Types.LIST_ROOMS));
         showLobby();
+      }
+      case Types.CAPTCHA -> {
+        captchaId = message.text("id");
+        captchaQuestion.setText(message.text("question"));
       }
       case Types.ROOMS -> updateRooms(message);
       case Types.ROOM_JOINED -> {

@@ -27,9 +27,10 @@ final class OnlineClient implements AutoCloseable {
 
   private volatile boolean running = true;
 
-  OnlineClient(String host, int port, Consumer<Message> onMessage, Consumer<String> onClosed)
+  OnlineClient(
+      String host, int port, boolean tls, Consumer<Message> onMessage, Consumer<String> onClosed)
       throws IOException {
-    socket = new Socket();
+    socket = tls ? javax.net.ssl.SSLSocketFactory.getDefault().createSocket() : new Socket();
     socket.connect(new InetSocketAddress(host, port), 3_000);
     socket.setSoTimeout(0);
     input = socket.getInputStream();

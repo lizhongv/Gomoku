@@ -5,6 +5,7 @@ public final class Types {
 
   public static final String HELLO = "hello";
   public static final String WELCOME = "welcome";
+  public static final String CAPTCHA = "captcha";
   public static final String REGISTER = "register";
   public static final String LOGIN = "login";
   public static final String LOGGED_IN = "logged_in";

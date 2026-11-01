@@ -16,7 +16,9 @@
 | --- | --- | --- | --- |
 | `hello` | C→S | `version` | 协议版本，当前 2 |
 | `welcome` | S→C | `version`、`server` | 握手成功 |
-| `register` | C→S | `username`、`password`、`display` | 注册并登录 |
+| `captcha` | C→S | — | 获取一次性算术验证码，5 分钟有效 |
+| `captcha` | S→C | `id`、`question` | 验证码题目 |
+| `register` | C→S | `username`、`password`、`display`、`captcha_id`、`captcha_answer` | 注册并登录；验证码错误或过期即拒绝 |
 | `login` | C→S | `username`、`password` | 登录 |
 | `logged_in` | S→C | `token`、`name`、`display`、`wins`、`losses`、`rating` | 登录成功；token 用于断线重连 |
 | `reconnect` | C→S | `token` | 重连并恢复房间 |
@@ -42,6 +44,8 @@
 - 服务端持有唯一的 `GameState`：校验轮次、坐标、占用、禁手与胜负。
 - 客户端**没有**「宣布胜利」的消息；胜负只由服务端根据落子判定。
 - 非法消息返回 `error`，不改变棋局；同一连接每秒最多 40 条消息。
+- 注册必须通过算术验证码；同一账号连续登录失败 5 次锁定 5 分钟。
+- 服务端可启用 TLS：设置 `GOMOKU_TLS_KEYSTORE`（PKCS12）与 `GOMOKU_TLS_PASSWORD` 后监听 SSL；客户端联机页勾选 TLS。
 - 断线保留座位 `GOMOKU_RECONNECT_SECONDS`（默认 60 秒），期间用 token 重连恢复；超时判负。
 - 每手限时 `GOMOKU_TURN_SECONDS`（默认 60 秒），超时由服务端判当前行棋方负，reason 为 `timeout`。
 - 结束后按 ELO（K=32，初始 1200）更新双方积分，并在 `game_over.rating` 中返回本人新积分。
