@@ -35,3 +35,6 @@ gomoku-legacy/manuals/*.fiv
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# Maven shade 生成
+dependency-reduced-pom.xml
