@@ -27,7 +27,9 @@ Windows 下使用 `mvnw.cmd` 或 Git Bash 中的 `./mvnw`。
 | `./mvnw -pl gomoku-ai test` | 只跑 AI 测试 |
 | `./mvnw spotless:apply` | 按 google-java-format 自动格式化 |
 | `./mvnw -pl gomoku-legacy -am package` | 打包迁移期 Swing 客户端 |
-| `java -jar gomoku-legacy/target/gomoku-legacy.jar` | 启动 Swing 客户端 |
+| `./scripts/run-desktop.sh` | 启动 JavaFX 客户端 |
+| `./scripts/screenshots.sh` | 生成客户端截图到 `docs/images/desktop/` |
+| `java -jar gomoku-legacy/target/gomoku-legacy.jar` | 启动旧 Swing 客户端 |
 | `java -cp "gomoku-core/target/classes;gomoku-ai/target/classes" io.github.lizhongv.gomoku.ai.bench.BenchmarkMain 20` | 运行 AI 基准（Windows 分隔符 `;`） |
 
 ## 三、模块约定
@@ -70,5 +72,5 @@ Windows 下使用 `mvnw.cmd` 或 Git Bash 中的 `./mvnw`。
 | 阶段 | 内容 | 验收 |
 | --- | --- | --- |
 | 一（已完成） | 多模块工程、规则内核、搜索引擎、基准、CI、文档 | `./mvnw verify` 全绿；战术题库 50/50 |
-| 二 | JavaFX 客户端：首页、对局、复盘、残局、设置、主题、i18n | 功能对齐旧版；截图与冒烟测试 |
+| 二（基础版完成） | JavaFX 客户端：首页、对局、复盘、设置、主题、i18n | 可完整对局与复盘；截图已生成；残局与联机待后续 |
 | 三 | 服务端权威棋局、协议 v2、房间匹配、jpackage 安装包 | 联机对局与断线重连通过；安装包可安装运行 |

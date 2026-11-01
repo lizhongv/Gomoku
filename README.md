@@ -6,6 +6,8 @@
 > 迁移期内仍可用 [`gomoku-legacy`](gomoku-legacy/) 中的 Swing 客户端体验完整功能。
 
 [![CI](https://github.com/lizhongv/Gomoku/actions/workflows/ci.yml/badge.svg)](https://github.com/lizhongv/Gomoku/actions/workflows/ci.yml)
+
+<img src="docs/images/desktop/game.png" alt="对局界面" width="900">
 ![Java](https://img.shields.io/badge/Java-17%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -16,7 +18,7 @@
 | `gomoku-core` 规则内核 | ✅ 已完成 | 15/19 路棋盘、无禁手与连珠禁手、棋型识别、Zobrist、胜负与和棋 |
 | `gomoku-ai` 搜索引擎 | ✅ 已完成 | 迭代加深、置换表、Killer/历史启发、VCF、12 档难度、提示接口 |
 | 基准与测试 | ✅ 已完成 | 50 题战术题库 100% 通过；`./mvnw verify` 全绿 |
-| JavaFX 桌面客户端 | 🚧 阶段二 | 首页、对局、复盘、残局、联机大厅、设置、主题 |
+| JavaFX 桌面客户端 | ✅ 基础版 | 首页、对局、复盘、设置、主题、中英双语；残局与联机在后续阶段 |
 | 联机服务端 v2 | 🚧 阶段三 | 服务端权威棋盘、房间匹配、断线重连、ELO |
 
 ## 能力
@@ -53,7 +55,19 @@ cd Gomoku
 ./mvnw verify                 # 编译、格式与静态检查、测试、覆盖率
 ```
 
-体验迁移期的 Swing 客户端（含单机 AI、联机、复盘、皮肤）：
+体验 JavaFX 桌面客户端：
+
+```bash
+./scripts/run-desktop.sh      # Windows 用 scriptsun-desktop.bat
+```
+
+生成界面截图（用于文档与改动后的回归检查）：
+
+```bash
+./scripts/screenshots.sh
+```
+
+迁移期的 Swing 客户端仍可用：
 
 ```bash
 ./mvnw -pl gomoku-legacy -am package
@@ -100,7 +114,8 @@ Gomoku/
 
 - [x] 规则内核与搜索引擎
 - [x] 战术题库、基准报告、CI 与静态检查
-- [ ] JavaFX 桌面客户端（阶段二）
+- [x] JavaFX 桌面客户端基础版（对局、复盘、设置、主题、双语）
+- [ ] 残局题库、AI 教练提示面板、连珠模式入口
 - [ ] 服务端权威棋局与联机 v2（阶段三）
 - [ ] 安装包、自动更新与三平台发布
 - [ ] 英文界面与无障碍

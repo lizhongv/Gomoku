@@ -1,0 +1,11 @@
+.root {
+    -g-bg: #EFF5F1;
+    -g-surface: #FAFFFC;
+    -g-text: #17332A;
+    -g-muted: #6B8A7C;
+    -g-accent: #1E7D5A;
+    -g-accent-hover: #176247;
+    -g-border: #CFE3D8;
+    -g-hover: #E2EFE8;
+    -g-board-bg: #DDEBE3;
+}
