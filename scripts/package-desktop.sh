@@ -11,6 +11,8 @@ VERSION="${VERSION:-2.0.0}"
 OUT="target/package"
 INPUT="$OUT/input"
 
+# 先把内部模块安装到本地仓库，jpackage 依赖解析需要同版本 jar
+bash mvnw -q -pl gomoku-core,gomoku-ai,gomoku-protocol -am install -DskipTests
 bash mvnw -q -pl gomoku-desktop -am package -DskipTests
 rm -rf "$INPUT" "$OUT/Gomoku"
 mkdir -p "$INPUT/lib"
