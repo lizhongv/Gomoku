@@ -68,12 +68,17 @@ WantedBy=multi-user.target
 
 ```bash
 bash scripts/package-desktop.sh app-image   # 免安装目录，target/package/Gomoku/Gomoku.exe
-bash scripts/package-desktop.sh msi         # Windows 安装包，需要 WiX
+bash scripts/package-desktop.sh msi         # Windows 安装包，需要 WiX Toolset 3
+bash scripts/package-desktop.sh deb         # Linux 安装包，需要 fakeroot
+bash scripts/package-desktop.sh dmg         # macOS 安装包，需要在 macOS 上构建
 ```
 
-- `app-image` 可直接分发压缩包，双击 `Gomoku.exe` 运行。
-- `msi`、`dmg`、`deb` 需要在对应平台构建；CI 发布流程在阶段四补齐。
-- 代码签名与自动更新尚未接入，正式售卖前必须补上。
+- 图标在 `packaging/icon.ico` / `icon.png`，可用 `python packaging/make-icon.py` 重新生成；macOS 的 `.icns` 由 CI 用 `iconutil` 生成。
+- `.github/workflows/package.yml` 在推送 `v*` 标签时于 Windows / Linux / macOS 三个平台构建 MSI、DEB、DMG 并创建 GitHub Release；手动触发（workflow_dispatch）只产出构件，不发版。
+- **代码签名尚未接入**。正式售卖前需要：
+  - Windows：`signtool sign /fd SHA256 /tr <时间戳服务> /td SHA256 /f cert.pfx <安装包>`；
+  - macOS：`codesign --sign "Developer ID Application: ..." --deep --options runtime` 并做公证（notarization）。
+- 自动更新尚未实现；当前版本需要用户手动下载新安装包。
 
 ## 三、端口
 
