@@ -103,6 +103,12 @@ public final class AppShell {
     content.getChildren().setAll(new ReviewView(this, moves, result));
   }
 
+  /** 联机。 */
+  public void showOnline() {
+    closeController();
+    content.getChildren().setAll(new OnlineView(this));
+  }
+
   /** 设置。 */
   public void showSettings() {
     closeController();
@@ -130,9 +136,12 @@ public final class AppShell {
 
   /** 关闭当前对局的后台线程，并停止对局页的计时与音效。 */
   public void closeController() {
-    if (content.getChildren().size() == 1
-        && content.getChildren().get(0) instanceof GameView gameView) {
-      gameView.dispose();
+    if (content.getChildren().size() == 1) {
+      if (content.getChildren().get(0) instanceof GameView gameView) {
+        gameView.dispose();
+      } else if (content.getChildren().get(0) instanceof OnlineView onlineView) {
+        onlineView.dispose();
+      }
     }
     if (controller != null) {
       controller.close();
@@ -144,11 +153,12 @@ public final class AppShell {
     brand.setText(context.i18n().t("app.title"));
     brand.getStyleClass().add("brand");
     Button home = navButton("nav.home", this::showHome);
+    Button online = navButton("nav.online", this::showOnline);
     Button settings = navButton("nav.settings", this::showSettings);
     Button about = navButton("nav.about", this::showAbout);
     Region spacer = new Region();
     HBox.setHgrow(spacer, Priority.ALWAYS);
-    nav.getChildren().setAll(brand, spacer, home, settings, about);
+    nav.getChildren().setAll(brand, spacer, home, online, settings, about);
     nav.getStyleClass().add("top-nav");
     nav.setAlignment(Pos.CENTER_LEFT);
     nav.setPadding(new Insets(12, 18, 12, 18));

@@ -28,6 +28,10 @@
             <artifactId>gomoku-ai</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.lizhongv.gomoku</groupId>
+            <artifactId>gomoku-protocol</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
@@ -61,7 +65,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>io.github.lizhongv.gomoku.desktop.GomokuApp</mainClass>
+                    <mainClass>io.github.lizhongv.gomoku.desktop.Launcher</mainClass>
                 </configuration>
             </plugin>
             <plugin>
@@ -70,7 +74,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>io.github.lizhongv.gomoku.desktop.GomokuApp</mainClass>
+                            <mainClass>io.github.lizhongv.gomoku.desktop.Launcher</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

@@ -2,7 +2,7 @@
 
 面向商品化的五子棋产品：自研规则内核、可调难度的搜索 AI、联机对战与跨平台桌面客户端。
 
-> **v2.0 正在重构中。** 规则内核与 AI 已完成并通过测试；JavaFX 桌面客户端与服务端 v2 在后续阶段交付，
+> **v2.0 正在重构中。** 规则内核、AI、JavaFX 桌面客户端与联机服务端基础版已完成；
 > 迁移期内仍可用 [`gomoku-legacy`](gomoku-legacy/) 中的 Swing 客户端体验完整功能。
 
 [![CI](https://github.com/lizhongv/Gomoku/actions/workflows/ci.yml/badge.svg)](https://github.com/lizhongv/Gomoku/actions/workflows/ci.yml)
@@ -18,8 +18,8 @@
 | `gomoku-core` 规则内核 | ✅ 已完成 | 15/19 路棋盘、无禁手与连珠禁手、棋型识别、Zobrist、胜负与和棋 |
 | `gomoku-ai` 搜索引擎 | ✅ 已完成 | 迭代加深、置换表、Killer/历史启发、VCF、12 档难度、提示接口 |
 | 基准与测试 | ✅ 已完成 | 50 题战术题库 100% 通过；`./mvnw verify` 全绿 |
-| JavaFX 桌面客户端 | ✅ 基础版 | 首页、对局、复盘、设置、主题、中英双语；残局与联机在后续阶段 |
-| 联机服务端 v2 | 🚧 阶段三 | 服务端权威棋盘、房间匹配、断线重连、ELO |
+| JavaFX 桌面客户端 | ✅ 基础版 | 单机对局、联机大厅、复盘、设置、主题、中英双语 |
+| 联机服务端 v2 | ✅ 基础版 | 服务端权威裁决、房间、断线重连、战绩持久化；匹配与 ELO 待补 |
 
 ## 能力
 
@@ -58,7 +58,8 @@ cd Gomoku
 体验 JavaFX 桌面客户端：
 
 ```bash
-./scripts/run-desktop.sh      # Windows 用 scriptsun-desktop.bat
+./scripts/run-desktop.sh      # Windows 用 scripts
+un-desktop.bat
 ```
 
 生成界面截图（用于文档与改动后的回归检查）：
@@ -90,6 +91,8 @@ Windows 下 classpath 分隔符用 `;`。
 Gomoku/
 ├── gomoku-core/       规则内核：棋盘、规则、棋型、胜负（零第三方依赖）
 ├── gomoku-ai/         搜索引擎：评估、排序、置换表、VCF、难度与基准
+├── gomoku-protocol/   联机协议：JSON 帧、版本协商与消息类型
+├── gomoku-server/     联机服务端：权威棋局、房间、重连与持久化
 ├── gomoku-legacy/     迁移期的 Swing 客户端与联机服务端（v1）
 ├── docs/              架构、AI 设计、规则、开发指南、基准报告
 ├── config/            Checkstyle 等工程配置
@@ -107,6 +110,8 @@ Gomoku/
 | [docs/AI-DESIGN.md](docs/AI-DESIGN.md) | 评估、搜索、VCF、难度设计与实测强度 |
 | [docs/RULES.md](docs/RULES.md) | 无禁手与连珠规则、禁手判定口径 |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 构建、测试、代码规范、发布流程 |
+| [docs/PROTOCOL.md](docs/PROTOCOL.md) | 联机协议 v2：帧格式、消息表、错误码与权威性 |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | 服务端部署、数据备份与桌面打包 |
 | [docs/COMPETITORS.md](docs/COMPETITORS.md) | 竞品功能矩阵与差距 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更 |
 
@@ -116,8 +121,9 @@ Gomoku/
 - [x] 战术题库、基准报告、CI 与静态检查
 - [x] JavaFX 桌面客户端基础版（对局、复盘、设置、主题、双语）
 - [ ] 残局题库、AI 教练提示面板、连珠模式入口
-- [ ] 服务端权威棋局与联机 v2（阶段三）
-- [ ] 安装包、自动更新与三平台发布
+- [x] 服务端权威棋局与联机大厅（基础版）
+- [x] 桌面免安装包（jpackage app-image）
+- [ ] MSI/DMG/DEB 安装包、签名与自动更新
 - [ ] 英文界面与无障碍
 
 ## 参与贡献

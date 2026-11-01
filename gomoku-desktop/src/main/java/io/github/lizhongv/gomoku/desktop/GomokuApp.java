@@ -84,6 +84,13 @@ public final class GomokuApp extends Application {
         3200,
         () -> {
           save(stage, folder, "review");
+          shell.showOnline();
+        });
+    after(
+        stage,
+        3800,
+        () -> {
+          save(stage, folder, "online");
           Platform.exit();
         });
   }
