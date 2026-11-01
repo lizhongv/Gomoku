@@ -3,7 +3,6 @@ name: Package
 on:
   workflow_dispatch:
   push:
-    branches: [feature/v2-core]
     tags: ["v*"]
 
 permissions:
